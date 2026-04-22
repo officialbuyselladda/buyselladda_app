@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'api_service.dart';
+import '../constants.dart';
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier();
@@ -47,22 +48,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isAuthenticated: true,
       );
     } catch (e) {
-      // Handle error
       state = state.copyWith(isLoading: false);
+      rethrow;
     }
   }
   
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
-      );
-    }
+    state = const AuthState();
   }
   
   Future<void> register(String name, String email, String password, String phone) async {
     state = state.copyWith(isLoading: true);
     try {
-      final response = await ApiService.post('\${AppConstants.authPath}/register', 
+      final response = await ApiService.post('${AppConstants.authPath}/register', 
         data: {'name': name, 'email': email, 'password': password, 'phone': phone});
       
       final token = response.data['token'];
@@ -77,15 +77,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
     } catch (e) {
       state = state.copyWith(isLoading: false);
+      rethrow;
     }
   }
   
   Future<void> checkAuthStatus() async {
-
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token != null) {
-      // Validate token by fetching /user/me
       try {
         final response = await ApiService.get('${AppConstants.userPath}/me');
         state = AuthState(

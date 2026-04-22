@@ -4,6 +4,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'core/theme.dart';
 import 'core/auth_provider.dart';
+import 'features/home/home_screen.dart';
+import 'features/auth/login_screen.dart';
+import 'features/auth/register_screen.dart';
+import 'features/profile/profile_screen.dart';
+import 'features/chat/chat_list_screen.dart';
+import 'features/product/create_product_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,85 +34,40 @@ class DealKroApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-
-    // Check auth status on start
-    ref.read(authProvider.notifier).checkAuthStatus();
-
     return MaterialApp(
       title: 'DealKro',
       theme: appTheme(),
-        home: authState.isAuthenticated 
-          ? const HomeScreen() 
-          : const LoginScreen(),
-        routes: {
-          '/register': (context) => const RegisterScreen(),
-          '/profile': (context) => const ProfileScreen(),
-          '/chat': (context) => const ChatListScreen(),
-          '/create-product': (context) => const CreateProductScreen(),
-        },
-
-
       debugShowCheckedModeBanner: false,
+      home: const AuthWrapper(),
+      routes: {
+        '/register': (context) => const RegisterScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/chat': (context) => const ChatListScreen(),
+        '/create-product': (context) => const CreateProductScreen(),
+      },
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class AuthWrapper extends ConsumerWidget {
+  const AuthWrapper({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('DealKro Home')),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Welcome to DealKro!', style: TextStyle(fontSize: 24)),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: null, // TODO: logout
-              child: Text('Logout'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+    // Init auth check
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).checkAuthStatus();
+    });
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('DealKro', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 48),
-              TextField(decoration: InputDecoration(labelText: 'Email')),
-              const SizedBox(height: 16),
-              TextField(decoration: InputDecoration(labelText: 'Password'), obscureText: true),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {}, // TODO: login
-                child: const Text('Login'),
-              ),
-              TextButton(
-                onPressed: () {}, // TODO: register
-                child: const Text('Register'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    if (authState.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return authState.isAuthenticated ? const HomeScreen() : const LoginScreen();
   }
 }
 
