@@ -1,119 +1,133 @@
-# 🛒 DealKro - Flutter Mobile App
+<div align="center">
+  <img src="assets/images/logo.png" alt="BuySellAdda" width="260" />
 
-[![Flutter](https://flutter.dev/images/brand.svg)](https://flutter.dev) [![Dart](https://www.dartlang.org/assets/logo/favicon.ico)](https://dart.dev) [![Node.js](https://nodejs.org/static/images/favicons/favicon-32x32.png)](https://nodejs.dev)
+  # BuySellAdda Mobile App
 
-**OLX-like classifieds marketplace app for buying/selling local deals with real-time chat, location services, and image uploads. Full-stack with Node.js/MongoDB backend.**
+  Har Deal, Ek Nayi Shuruaat
 
-## ✨ Features
+  A Flutter classifieds app for browsing local deals, posting ads, chatting with sellers, managing account settings, and staying logged in with saved tokens.
 
-| Feature | Status |
-|---------|--------|
-| 👤 User Authentication (Login/Register) | ✅ Complete |
-| 📱 Product Listing & Search | ✅ Complete |
-| 📤 Post Products with Images (Cloudinary) | 🔄 Image Upload Ready |
-| 💬 Real-time Chat | 🔄 Stub Ready |
-| 📍 Location-based Search | ✅ Geolocator + Reverse Geocode |
-| 👑 Profile Management | 🔄 Stub Ready |
-| 🎨 Material 3 UI | ✅ Responsive |
-| 🔍 Filters/Categories | Planned |
+  ![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+  ![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+  ![Riverpod](https://img.shields.io/badge/Riverpod-State-40B5AD?style=for-the-badge)
+  ![Socket.io](https://img.shields.io/badge/Socket.io-Chat-010101?style=for-the-badge&logo=socket.io&logoColor=white)
+</div>
 
-## 🛠 Tech Stack
+## Overview
 
-```
-Frontend: Flutter 3.24+ | Riverpod | Dio | Geolocator | Image Picker | Socket.io
-Backend: Node.js | Express | MongoDB | Cloudinary | Socket.io | Nodemailer
-Other: .env | SharedPreferences | Hive
-```
+The BuySellAdda mobile app brings the marketplace experience to Android and iOS. It uses the same backend as the web app and includes branded splash screens, token persistence, home feed, categories, product details, wishlist, account pages, language preferences, my ads, and chat screens.
 
-## 🚀 Quick Setup
+## Features
 
-### Prerequisites
-- Flutter SDK ([install](https://flutter.dev/docs/get-started/install))
-- Node.js 18+
-- Android Studio / Emulator
-- MongoDB Atlas or local
+| Area | Highlights |
+| --- | --- |
+| Splash | Smooth branded splash with BuySellAdda logo |
+| Auth | Login, register, saved token session |
+| Home | Product feed, categories, search-ready UI |
+| Product Detail | Responsive product details with seller/contact actions |
+| Chat | Buyer-seller chat flow connected to product context |
+| Account | Profile, edit details, wishlist, my ads, privacy, help, language |
+| Listings | Create/manage ads and view my ads |
+| Media | Image picker and cached network images |
+| Location | Geolocator and reverse geocoding support |
 
-### 1. Backend
-```bash
-cd backend
-npm install
-npm run dev  # port 5000
-# Run seeders: node seeders/adminSeeder.js
-```
+## Tech Stack
 
-### 2. Flutter App
+- Flutter
+- Dart
+- Riverpod
+- Dio
+- Shared Preferences
+- Hive
+- Socket.io Client
+- Geolocator + Geocoding
+- Image Picker
+- Cached Network Image
+- Flutter Dotenv
+
+## Quick Start
+
 ```bash
 cd deal
 flutter pub get
-flutter run  # Emulator uses 10.0.2.2:5000
+flutter run
 ```
 
-### Environment (.env created)
-```
-BASE_URL=http://10.0.2.2:5000/api  # Emulator
-# BASE_URL=http://YOUR_IP:5000  # Physical device
+## Environment
+
+The app reads `deal/.env`:
+
+```env
+BASE_URL=http://10.0.2.2:5000/api
 SOCKET_URL=http://10.0.2.2:5000
 ```
 
-## 📊 Backend API Documentation
+For a physical device, use your computer or server IP:
 
-| Endpoint | Method | Description | Auth |
-|----------|--------|-------------|------|
-| `/auth/register` | POST | Register user | - |
-| `/auth/login` | POST | Login user | - |
-| `/product` | GET | List products | - |
-| `/product/my-products` | GET | User products | ✅ |
-| `/product` | POST | Create product | ✅ |
-| `/upload` | POST | Upload images | ✅ |
-| `/user/me` | GET | User profile | ✅ |
-| `/user/profile` | PUT | Update profile | ✅ |
-| `/chat` | GET | User chats | ✅ |
-| `/geocode/reverse` | GET | LatLng to address | - |
-
-## 📁 Project Structure
-
-```
-deal/
-├── lib/
-│   ├── core/           # Providers, API, theme, constants
-│   ├── models/         # User, Product, Message
-│   ├── features/       # Screens: auth, home, product, chat, profile
-│   └── shared/         # Reusable widgets
-├── assets/             # Images, .env
-└── pubspec.yaml       # Dependencies
+```env
+BASE_URL=http://YOUR_IP:5000/api
+SOCKET_URL=http://YOUR_IP:5000
 ```
 
-## 📱 Screenshots
+Current production-style example:
 
-![Home Screen](assets/images/home.png)
-![Create Product](assets/images/create.png)
-![Chat](assets/images/chat.png)
+```env
+BASE_URL=http://72.60.102.36:5003/api
+SOCKET_URL=http://72.60.102.36:5003
+```
 
-*(Add screenshots after testing)*
-
-## 🧪 Testing
+## Scripts
 
 ```bash
-flutter test
-flutter analyze
+flutter pub get       # Install packages
+flutter run           # Run app
+flutter analyze       # Static analysis
+flutter test          # Run tests
+flutter build apk     # Android release APK
+flutter build appbundle
 ```
 
-## 🤝 Contributing
+## Project Structure
 
-1. Fork & clone
-2. Create feature branch `git checkout -b feature/amazing`
-3. Commit `git commit -m 'Add amazing feature'`
-4. Push & PR
+```text
+deal/
+  lib/
+    core/          App constants, language, theme, API helpers
+    features/      Auth, home, product, chat, profile screens
+    models/        Product, user, message models
+    shared/        Reusable widgets
+    main.dart      App entry point and routes
+  assets/
+    images/        BuySellAdda logo and app assets
+    animations/    Lottie and animation files
+  android/         Android platform project
+  ios/             iOS platform project
+  pubspec.yaml     Flutter dependencies and asset config
+```
 
-## 📄 License
+## Backend Connection
 
-MIT License - see [LICENSE](LICENSE) file.
+Start the backend first:
 
-## 🙌 Credits
+```bash
+cd backend
+npm install
+npm run dev
+```
 
-Built with ❤️ for DealKro project. Stars ⭐ appreciated!
+Then update `deal/.env` so the app points to that backend.
 
----
+## Build Notes
 
-**Ready for production! 🚀 Test with backend running.**
+- `assets/images/logo.png` is used across splash, auth, and home branding.
+- `flutter_dotenv` loads `.env`; keep it listed in `pubspec.yaml` assets.
+- Android emulator uses `10.0.2.2` to reach the host machine.
+- Real devices need a LAN or public server URL.
 
+## Brand
+
+Name: `BuySellAdda`
+
+Tagline: `Har Deal, Ek Nayi Shuruaat`
+
+Logo asset: `assets/images/logo.png`

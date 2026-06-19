@@ -13,6 +13,9 @@ class Product {
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
+  final String condition;
+  final int views;
+  final String status;
   
   Product({
     required this.id,
@@ -27,20 +30,27 @@ class Product {
     required this.createdAt,
     required this.updatedAt,
     this.isActive = true,
+    this.condition = 'Used',
+    this.views = 0,
+    this.status = 'approved',
   });
   
   factory Product.fromJson(Map<String, dynamic> json) => Product(
     id: json['_id'] ?? '',
     title: json['title'] ?? '',
     description: json['description'] ?? '',
-    price: (json['price'] ?? 0).toDouble(),
-    images: List<String>.from((json['images'] ?? [])),
+    price: _toDouble(json['price']),
+    images: _readImages(json['images']),
     location: json['location'] ?? '',
     category: json['category'] ?? '',
-    userId: json['userId'] ?? '',
-    user: json['user'] != null ? User.fromJson(json['user']) : null,
-    createdAt: DateTime.parse(json['createdAt']),
-    updatedAt: DateTime.parse(json['updatedAt']),
+    userId: json['user'] is String ? json['user'] : (json['userId'] ?? json['user']?['_id'] ?? ''),
+    user: json['user'] is Map<String, dynamic> ? User.fromJson(json['user']) : null,
+    createdAt: DateTime.tryParse('${json['createdAt']}') ?? DateTime.now(),
+    updatedAt: DateTime.tryParse('${json['updatedAt']}') ?? DateTime.now(),
+    isActive: (json['status'] ?? 'approved') == 'approved',
+    condition: json['condition'] ?? 'Used',
+    views: json['views'] ?? 0,
+    status: json['status'] ?? 'approved',
   );
   
   Map<String, dynamic> toJson() => {
@@ -50,5 +60,22 @@ class Product {
     'category': category,
     'location': location,
   };
+}
+
+double _toDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  return double.tryParse('$value') ?? 0;
+}
+
+List<String> _readImages(dynamic value) {
+  if (value is! List) return [];
+  return value
+      .map((image) {
+        if (image is String) return image;
+        if (image is Map && image['url'] != null) return '${image['url']}';
+        return '';
+      })
+      .where((url) => url.isNotEmpty)
+      .toList();
 }
 

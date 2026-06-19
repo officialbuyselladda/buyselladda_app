@@ -1,0 +1,4 @@
+storePassword=changeit
+keyPassword=changeit
+keyAlias=dealkro
+storeFile=../release-key.jks

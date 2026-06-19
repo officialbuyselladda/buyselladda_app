@@ -23,4 +23,6 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 
+rootProject.buildFileName = "build.gradle"
 include(":app")
+project(":app").buildFileName = "build.gradle"

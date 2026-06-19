@@ -1,5 +1,5 @@
 name: deal
-description: "DealKro - OLX-like Flutter mobile app integrated with Node.js backend."
+description: "BuySellAdda - OLX-like Flutter mobile app integrated with Node.js backend."
 publish_to: 'none'
 
 version: 1.0.0+1

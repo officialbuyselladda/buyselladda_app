@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/product_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../core/constants.dart';
 import '../../models/product_model.dart';
+import '../product/product_detail_screen.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -14,88 +15,152 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to product detail
-        ref.read(productProvider.notifier).fetchProductDetail(product.id);
-        // Navigator.push(... ProductDetailScreen());
-      },
-      child: Card(
+    final formatter = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs ', decimalDigits: 0);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => Navigator.pushNamed(
+        context,
+        ProductDetailScreen.routeName,
+        arguments: product.id,
+      ),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: AppConstants.surfaceColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppConstants.borderColor),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F1E293B),
+              blurRadius: 20,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 3,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: CachedNetworkImage(
-                  imageUrl: product.images.isNotEmpty ? product.images.first : '',
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(color: Colors.grey.shade200),
-                  errorWidget: (context, url, error) => const Icon(Icons.image_not_supported),
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    Text(
-                      product.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '\$${product.price.toStringAsFixed(0)}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                    _ProductImage(url: product.images.isNotEmpty ? product.images.first : null),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.favorite_border_rounded, size: 18, color: Color(0xFF111827)),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            product.location,
-                            style: TextTheme.of(context).bodySmall?.copyWith(color: Colors.grey.shade600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          product.condition,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton.icon(
-                            onPressed: () {
-                              // Chat
-                            },
-                            icon: const Icon(Icons.chat, size: 16),
-                            label: const Text('Chat'),
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: AppConstants.primaryBorderColor),
+                        ),
+                        child: Text(
+                          product.category.isEmpty ? 'Ad' : product.category,
+                          style: const TextStyle(
+                            color: AppConstants.primaryDarkColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            // Favorite
-                          },
-                          icon: const Icon(Icons.favorite_border),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    formatter.format(product.price),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: AppConstants.primaryDarkColor,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    product.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF374151),
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.place_outlined, size: 14, color: Color(0xFF9CA3AF)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          product.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: AppConstants.textSecondaryColor,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.visibility_outlined, size: 13, color: Color(0xFF9CA3AF)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${product.views} views',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppConstants.textSecondaryColor),
+                      ),
+                      const Spacer(),
+                      Text(
+                        DateFormat('dd MMM').format(product.createdAt),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppConstants.textSecondaryColor),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -105,3 +170,28 @@ class ProductCard extends StatelessWidget {
   }
 }
 
+class _ProductImage extends StatelessWidget {
+  final String? url;
+
+  const _ProductImage({this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    if (url == null || url!.isEmpty) {
+      return Container(
+        color: AppConstants.backgroundColor,
+        child: const Icon(Icons.image_not_supported_outlined, color: AppConstants.textSubtleColor),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: url!,
+      fit: BoxFit.cover,
+      placeholder: (context, _) => Container(color: AppConstants.backgroundColor),
+      errorWidget: (context, _, __) => Container(
+        color: AppConstants.backgroundColor,
+        child: const Icon(Icons.image_not_supported_outlined, color: AppConstants.textSubtleColor),
+      ),
+    );
+  }
+}
