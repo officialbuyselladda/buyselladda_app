@@ -19,6 +19,7 @@ class ProductState {
   final bool hasMore;
   final String? search;
   final String? category;
+  final String? subCategory;
   final double? minPrice;
   final double? maxPrice;
   final String sortBy;
@@ -37,6 +38,7 @@ class ProductState {
     this.hasMore = true,
     this.search,
     this.category,
+    this.subCategory,
     this.minPrice,
     this.maxPrice,
     this.sortBy = 'latest',
@@ -56,6 +58,7 @@ class ProductState {
     bool? hasMore,
     String? search,
     String? category,
+    String? subCategory,
     double? minPrice,
     double? maxPrice,
     String? sortBy,
@@ -74,6 +77,7 @@ class ProductState {
       hasMore: hasMore ?? this.hasMore,
       search: search ?? this.search,
       category: category ?? this.category,
+      subCategory: subCategory ?? this.subCategory,
       minPrice: minPrice ?? this.minPrice,
       maxPrice: maxPrice ?? this.maxPrice,
       sortBy: sortBy ?? this.sortBy,
@@ -90,6 +94,7 @@ class ProductNotifier extends StateNotifier<ProductState> {
   Future<void> fetchProducts({
     String? search,
     String? category,
+    String? subCategory,
     double? minPrice,
     double? maxPrice,
     String? sortBy,
@@ -106,6 +111,7 @@ class ProductNotifier extends StateNotifier<ProductState> {
       error: null,
       search: search,
       category: category,
+      subCategory: subCategory,
       minPrice: minPrice,
       maxPrice: maxPrice,
       sortBy: sortBy,
@@ -119,6 +125,7 @@ class ProductNotifier extends StateNotifier<ProductState> {
         'limit': 20,
         if ((search ?? state.search)?.trim().isNotEmpty == true) 'search': (search ?? state.search)!.trim(),
         if ((category ?? state.category)?.trim().isNotEmpty == true) 'category': category ?? state.category,
+        if ((subCategory ?? state.subCategory)?.trim().isNotEmpty == true) 'subCategory': subCategory ?? state.subCategory,
         if ((minPrice ?? state.minPrice) != null) 'minPrice': minPrice ?? state.minPrice,
         if ((maxPrice ?? state.maxPrice) != null) 'maxPrice': maxPrice ?? state.maxPrice,
         'sortBy': sortBy ?? state.sortBy,
@@ -160,13 +167,14 @@ class ProductNotifier extends StateNotifier<ProductState> {
   }
   
   Future<void> createProduct(Map<String, dynamic> data) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
     try {
       await ApiService.post(AppConstants.productPath, data: data);
       state = state.copyWith(isLoading: false);
       fetchProducts();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: _readError(e));
+      rethrow;
     }
   }
 }
@@ -208,4 +216,3 @@ String _readError(Object error) {
   }
   return error.toString();
 }
-

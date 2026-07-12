@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/api_service.dart';
 import '../../core/constants.dart';
 import '../../models/product_model.dart';
+import 'product_detail_screen.dart';
 
 class MyAdsScreen extends StatefulWidget {
   const MyAdsScreen({super.key});
@@ -23,10 +24,22 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
   }
 
   Future<List<Product>> _fetchMyAds() async {
-    final response = await ApiService.get('${AppConstants.productPath}/my-products', query: {'limit': 50});
+    final response = await ApiService.get(
+      '${AppConstants.productPath}/my-products',
+      query: {'limit': 50},
+    );
     final payload = response.data['data'] ?? response.data;
-    final list = payload is List ? payload : (payload['data'] ?? payload['products'] ?? []);
-    return (list as List).map((json) => Product.fromJson(Map<String, dynamic>.from(json as Map))).toList();
+    final list = payload is List
+        ? payload
+        : payload is Map
+            ? (payload['data'] ?? payload['products'] ?? payload['items'] ?? [])
+            : [];
+    if (list is! List) return [];
+    return list
+        .whereType<Map>()
+        .map((json) => Product.fromJson(Map<String, dynamic>.from(json)))
+        .where((product) => product.id.isNotEmpty)
+        .toList();
   }
 
   Future<void> _refresh() async {
@@ -38,9 +51,13 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
     try {
       await ApiService.put('${AppConstants.productPath}/${product.id}', data: {'status': status});
       await _refresh();
-      _showSnack(status == 'paused' ? 'Ad paused' : status == 'approved' ? 'Ad resumed' : 'Ad marked as sold');
+      _showSnack(status == 'paused'
+          ? 'Ad paused'
+          : status == 'approved'
+              ? 'Ad resumed'
+              : 'Ad marked as sold');
     } catch (error) {
-      _showSnack('Action failed');
+      _showSnack(_readError(error, fallback: 'Action failed'));
     }
   }
 
@@ -62,7 +79,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
       await _refresh();
       _showSnack('Ad deleted');
     } catch (error) {
-      _showSnack('Delete failed');
+      _showSnack(_readError(error, fallback: 'Delete failed'));
     }
   }
 
@@ -141,6 +158,11 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _MyAdRow(
                             product: visibleAds[index],
+                            onView: () => Navigator.pushNamed(
+                              context,
+                              ProductDetailScreen.routeName,
+                              arguments: visibleAds[index].id,
+                            ),
                             onEdit: () => Navigator.pushNamed(context, '/create-product', arguments: visibleAds[index]).then((_) => _refresh()),
                             onPauseToggle: () => _setStatus(visibleAds[index], visibleAds[index].status == 'paused' ? 'approved' : 'paused'),
                             onSold: () => _setStatus(visibleAds[index], 'sold'),
@@ -175,6 +197,11 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
       counts[status] = (counts[status] ?? 0) + 1;
     }
     return counts;
+  }
+
+  String _readError(Object error, {required String fallback}) {
+    final text = error.toString().replaceFirst('Exception: ', '').trim();
+    return text.isEmpty ? fallback : text;
   }
 }
 
@@ -217,96 +244,125 @@ class _StatusTabs extends StatelessWidget {
 
 class _MyAdRow extends StatelessWidget {
   final Product product;
+  final VoidCallback onView;
   final VoidCallback onEdit;
   final VoidCallback onPauseToggle;
   final VoidCallback onSold;
   final VoidCallback onDelete;
 
-  const _MyAdRow({required this.product, required this.onEdit, required this.onPauseToggle, required this.onSold, required this.onDelete});
+  const _MyAdRow({
+    required this.product,
+    required this.onView,
+    required this.onEdit,
+    required this.onPauseToggle,
+    required this.onSold,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     final formatter = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs ', decimalDigits: 0);
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppConstants.borderColor)),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 92,
-                height: 92,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(color: AppConstants.backgroundColor, borderRadius: BorderRadius.circular(8)),
-                child: product.images.isEmpty ? const Icon(Icons.image_not_supported_outlined) : CachedNetworkImage(imageUrl: product.images.first, fit: BoxFit.cover),
-              ),
+    final canPauseToggle = product.status == 'approved' || product.status == 'paused';
+    final isSold = product.status == 'sold';
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onView,
+        child: Ink(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppConstants.borderColor),
+            boxShadow: const [BoxShadow(color: Color(0x0A1E293B), blurRadius: 18, offset: Offset(0, 8))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _AdImage(url: product.images.isNotEmpty ? product.images.first : null),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: Text(product.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900))),
-                        const SizedBox(width: 6),
-                        _AdStatusPill(status: product.status),
-                      ],
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(
+                      child: Text(
+                        product.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, height: 1.2),
+                      ),
                     ),
-                    const SizedBox(height: 5),
-                    Text(formatter.format(product.price), style: const TextStyle(color: AppConstants.primaryDarkColor, fontWeight: FontWeight.w900, fontSize: 17)),
-                    const SizedBox(height: 7),
-                    Row(
-                      children: [
-                        const Icon(Icons.visibility_outlined, size: 15, color: AppConstants.textSecondaryColor),
-                        const SizedBox(width: 4),
-                        Text('${product.views} views', style: const TextStyle(color: AppConstants.textSecondaryColor, fontWeight: FontWeight.w700)),
-                        const SizedBox(width: 10),
-                        const Icon(Icons.place_outlined, size: 15, color: AppConstants.textSecondaryColor),
-                        const SizedBox(width: 4),
-                        Expanded(child: Text(product.location, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppConstants.textSecondaryColor))),
-                      ],
+                    const SizedBox(width: 6),
+                    _AdStatusPill(status: product.status),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text(
+                    formatter.format(product.price),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppConstants.primaryDarkColor, fontWeight: FontWeight.w900, fontSize: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  _AdMetaLine(icon: Icons.place_outlined, text: product.location.isEmpty ? product.category : product.location),
+                  const SizedBox(height: 7),
+                  Row(children: [
+                    Expanded(child: _AdMetaLine(icon: Icons.visibility_outlined, text: '${product.views} views')),
+                    Text(
+                      DateFormat('dd MMM yyyy').format(product.createdAt),
+                      style: const TextStyle(color: AppConstants.textSecondaryColor, fontSize: 11, fontWeight: FontWeight.w700),
                     ),
-                  ],
-                ),
+                  ]),
+                ]),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _ActionButton(onPressed: onPauseToggle, icon: product.status == 'paused' ? Icons.play_arrow_rounded : Icons.pause_rounded, label: product.status == 'paused' ? 'Resume' : 'Pause'),
-              _ActionButton(onPressed: onEdit, icon: Icons.edit_outlined, label: 'Edit'),
-              SizedBox(
-                width: 46,
-                height: 42,
-                child: PopupMenuButton<String>(
-                  tooltip: 'More actions',
-                  icon: const Icon(Icons.more_vert_rounded),
-                onSelected: (value) {
-                  if (value == 'sold') onSold();
-                  if (value == 'delete') onDelete();
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'sold', child: Text('Mark as sold')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete ad')),
-                ],
+            ]),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _ActionButton(onPressed: onView, icon: Icons.open_in_new_rounded, label: 'View'),
+                _ActionButton(
+                  onPressed: isSold ? null : onEdit,
+                  icon: Icons.edit_outlined,
+                  label: 'Edit',
                 ),
-              ),
-            ],
-          ),
-        ],
+                _ActionButton(
+                  onPressed: canPauseToggle ? onPauseToggle : null,
+                  icon: product.status == 'paused' ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                  label: product.status == 'paused' ? 'Resume' : 'Pause',
+                ),
+                SizedBox(
+                  width: 46,
+                  height: 42,
+                  child: PopupMenuButton<String>(
+                    tooltip: 'More actions',
+                    icon: const Icon(Icons.more_vert_rounded),
+                    onSelected: (value) {
+                      if (value == 'sold' && !isSold) onSold();
+                      if (value == 'delete') onDelete();
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'sold',
+                        enabled: !isSold,
+                        child: const Text('Mark as sold'),
+                      ),
+                      const PopupMenuItem(value: 'delete', child: Text('Delete ad')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ]),
+        ),
       ),
     );
   }
 }
 
 class _ActionButton extends StatelessWidget {
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData icon;
   final String label;
 
@@ -322,6 +378,60 @@ class _ActionButton extends StatelessWidget {
         label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
     );
+  }
+}
+
+class _AdImage extends StatelessWidget {
+  final String? url;
+
+  const _AdImage({this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: 96,
+        height: 108,
+        child: url == null || url!.isEmpty
+            ? Container(
+                color: AppConstants.backgroundColor,
+                child: const Icon(Icons.image_not_supported_outlined, color: AppConstants.textSubtleColor),
+              )
+            : CachedNetworkImage(
+                imageUrl: url!,
+                fit: BoxFit.cover,
+                placeholder: (context, _) => Container(color: AppConstants.backgroundColor),
+                errorWidget: (context, _, __) => Container(
+                  color: AppConstants.backgroundColor,
+                  child: const Icon(Icons.image_not_supported_outlined, color: AppConstants.textSubtleColor),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class _AdMetaLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _AdMetaLine({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Icon(icon, size: 14, color: AppConstants.textSubtleColor),
+      const SizedBox(width: 4),
+      Expanded(
+        child: Text(
+          text.isEmpty ? 'Not available' : text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: AppConstants.textSecondaryColor, fontSize: 12, fontWeight: FontWeight.w700),
+        ),
+      ),
+    ]);
   }
 }
 

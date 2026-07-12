@@ -11,6 +11,7 @@ import 'features/home/home_screen.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/auth/forgot_password_screen.dart';
+import 'features/auth/reset_password_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/chat/chat_list_screen.dart';
 import 'features/product/create_product_screen.dart';
@@ -56,6 +57,11 @@ class BuySellAddaApp extends ConsumerWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
+        '/reset-password': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final token = args is Map ? '${args['token'] ?? ''}' : '';
+          return ResetPasswordScreen(token: token);
+        },
         '/profile': (context) => const ProfileScreen(),
         '/chat': (context) => const ChatListScreen(),
         '/favorites': (context) => const FavoritesScreen(),

@@ -1,4 +1,4 @@
-storePassword=changeit
-keyPassword=changeit
-keyAlias=dealkro
-storeFile=../release-key.jks
+storePassword=REPLACE_WITH_STRONG_STORE_PASSWORD
+keyPassword=REPLACE_WITH_STRONG_KEY_PASSWORD
+keyAlias=upload
+storeFile=upload-keystore.jks

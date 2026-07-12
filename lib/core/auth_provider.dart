@@ -128,6 +128,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
       rethrow;
     }
   }
+
+  Future<void> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final response = await ApiService.put(
+        '${AppConstants.authPath}/reset-password/$token',
+        data: {'password': password},
+      );
+      final payload = response.data['data'] ?? response.data;
+      final authToken = payload['token'];
+      final userData = payload['user'];
+      await _persistSession(authToken, userData);
+      state = AuthState(
+        user: User.fromJson(userData),
+        isAuthenticated: true,
+        hasChecked: true,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: _readError(e));
+      rethrow;
+    }
+  }
   
   Future<void> checkAuthStatus() async {
     if (state.hasChecked || state.isLoading) return;

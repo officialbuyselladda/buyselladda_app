@@ -10,8 +10,35 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+def requestedReleaseBuild = gradle.startParameter.taskNames.any {
+    it.toLowerCase(java.util.Locale.ROOT).contains("release")
+}
+def versionPropertiesFile = rootProject.file("version.properties")
+def versionProperties = new Properties()
+if (versionPropertiesFile.exists()) {
+    versionProperties.load(new FileInputStream(versionPropertiesFile))
+}
+def androidVersionCode = (versionProperties["VERSION_CODE"] ?: "1").toString().toInteger()
+if (requestedReleaseBuild) {
+    androidVersionCode += 1
+    versionProperties["VERSION_CODE"] = androidVersionCode.toString()
+    versionPropertiesFile.withOutputStream {
+        versionProperties.store(it, "Auto-incremented for Play Store release builds")
+    }
+}
+
+def requiredSigningProperties = ["storeFile", "storePassword", "keyAlias", "keyPassword"]
+def missingSigningProperties = requiredSigningProperties.findAll {
+    !keystoreProperties.containsKey(it) || !keystoreProperties[it]?.toString()?.trim()
+}
+def releaseStoreFile = keystoreProperties["storeFile"] ? file(keystoreProperties["storeFile"]) : null
+def hasReleaseSigning = keystorePropertiesFile.exists() &&
+        missingSigningProperties.isEmpty() &&
+        releaseStoreFile != null &&
+        releaseStoreFile.exists()
+
 android {
-    namespace "com.dealkro.app"
+    namespace "com.buyselladda.app"
     compileSdk 36
     ndkVersion flutter.ndkVersion
 
@@ -25,20 +52,20 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.dealkro.app"
+        applicationId "com.buyselladda.app"
         minSdkVersion flutter.minSdkVersion
         targetSdk 36
-        versionCode flutter.versionCode
+        versionCode androidVersionCode
         versionName flutter.versionName
         multiDexEnabled true
     }
 
     signingConfigs {
         release {
-            if (keystorePropertiesFile.exists()) {
+            if (hasReleaseSigning) {
                 keyAlias keystoreProperties["keyAlias"]
                 keyPassword keystoreProperties["keyPassword"]
-                storeFile keystoreProperties["storeFile"] ? file(keystoreProperties["storeFile"]) : null
+                storeFile releaseStoreFile
                 storePassword keystoreProperties["storePassword"]
             }
         }
@@ -51,9 +78,7 @@ android {
         }
 
         release {
-            signingConfig keystorePropertiesFile.exists()
-                    ? signingConfigs.release
-                    : signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }
@@ -74,4 +99,29 @@ android {
 
 flutter {
     source "../.."
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def graphHasReleaseBuild = taskGraph.allTasks.any {
+        it.path.toLowerCase().contains("release")
+    }
+
+    if (graphHasReleaseBuild && !hasReleaseSigning) {
+        def missing = []
+        if (!keystorePropertiesFile.exists()) {
+            missing << "android/key.properties file is missing"
+        }
+        if (!missingSigningProperties.isEmpty()) {
+            missing << "missing values in key.properties: ${missingSigningProperties.join(', ')}"
+        }
+        if (releaseStoreFile == null || !releaseStoreFile.exists()) {
+            missing << "keystore file not found at storeFile path"
+        }
+
+        throw new GradleException(
+                "Release signing is not configured for Play Store build.\n" +
+                missing.collect { "- ${it}" }.join("\n") +
+                "\nCreate android/key.properties from android/key.properties.example and generate the upload keystore first."
+        )
+    }
 }

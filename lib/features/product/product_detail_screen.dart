@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/api_service.dart';
 import '../../core/auth_provider.dart';
 import '../../core/constants.dart';
@@ -185,7 +186,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen>
                       ],
                     ),
                   ),
-        bottomSheet: product == null
+        bottomNavigationBar: product == null
             ? null
             : _ContactBar(
                 product:    product,
@@ -456,11 +457,15 @@ class _ImagePager extends StatelessWidget {
           onPageChanged: onChanged,
           itemBuilder: (_, i) => InteractiveViewer(
             minScale: 1.0, maxScale: 3.5,
-            child: CachedNetworkImage(
-              imageUrl: images[i],
-              fit: BoxFit.contain,
-              placeholder: (_, __) => const Center(child: CircularProgressIndicator(color: Colors.white30, strokeWidth: 1.5)),
-              errorWidget: (_, __, ___) => Icon(Icons.image_not_supported_outlined, color: Colors.white.withOpacity(0.25), size: 48),
+            child: SizedBox.expand(
+              child: CachedNetworkImage(
+                imageUrl: images[i],
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => const Center(child: CircularProgressIndicator(color: Colors.white30, strokeWidth: 1.5)),
+                errorWidget: (_, __, ___) => Icon(Icons.image_not_supported_outlined, color: Colors.white.withOpacity(0.25), size: 48),
+              ),
             ),
           ),
         ),
@@ -603,6 +608,8 @@ class _DetailBody extends StatelessWidget {
         const SizedBox(height: 12),
         _DetailGridCard(product: product),
         const SizedBox(height: 12),
+        _MapCard(product: product),
+        const SizedBox(height: 12),
         _DescriptionCard(product: product),
       ],
     );
@@ -625,7 +632,7 @@ class _DetailBody extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 16, 14, 120),
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 150),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),
@@ -705,7 +712,7 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final priceFormatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final priceFormatter = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs ', decimalDigits: 0);
 
     return _SurfaceCard(
       child: Column(
@@ -757,6 +764,30 @@ class _HeroCard extends StatelessWidget {
             style: _T.display(18, color: _T.text),
           ),
 
+          if (product.location.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: _T.orangeLight,
+                borderRadius: _T.r20,
+                border: Border.all(color: _T.orangeMid),
+              ),
+              child: Row(children: [
+                const Icon(Icons.place_outlined, size: 16, color: _T.orangeDark),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    product.location.trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _T.body(13, color: _T.orangeDark, weight: FontWeight.w700),
+                  ),
+                ),
+              ]),
+            ),
+          ],
+
           const SizedBox(height: 14),
 
           // Divider
@@ -769,7 +800,7 @@ class _HeroCard extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                product.location.isEmpty ? 'India' : product.location,
+                product.location.trim().isEmpty ? 'India' : product.location.trim(),
                 style: _T.body(13, color: _T.textMuted, weight: FontWeight.w600),
                 maxLines: 1, overflow: TextOverflow.ellipsis,
               ),
@@ -857,6 +888,19 @@ class _SellerCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text('Verified Seller', style: _T.body(11, color: _T.orange, weight: FontWeight.w800)),
                 ]),
+                if (product.location.trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    const Icon(Icons.place_outlined, size: 14, color: _T.textMuted),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(product.location.trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _T.body(12, color: _T.textSubtle, weight: FontWeight.w600)),
+                    ),
+                  ]),
+                ],
               ]),
             ),
             // Rating chip
@@ -950,6 +994,8 @@ class _DetailGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final rows = [
       _Row('Category',  product.category,                              Icons.layers_outlined),
+      if (product.location.trim().isNotEmpty)
+        _Row('Location',  product.location.trim(),                            Icons.place_outlined),
       _Row('Condition', product.condition,                             Icons.sell_outlined),
       _Row('Posted',    DateFormat('dd MMM yyyy').format(product.createdAt), Icons.calendar_today_outlined),
       _Row('Ad ID',     '#${product.id.length > 8 ? product.id.substring(product.id.length - 8) : product.id}', Icons.tag_outlined),
@@ -1009,6 +1055,334 @@ class _DetailRow extends StatelessWidget {
       ]),
     );
   }
+}
+
+// ─── Map Card ─────────────────────────────────────────────────────────────────
+class _MapCard extends StatelessWidget {
+  final Product product;
+  const _MapCard({required this.product});
+
+  String _staticMapUrl(double lat, double lng) {
+    final query = Uri(queryParameters: {
+      'center': '$lat,$lng',
+      'zoom': '15',
+      'size': '640x360',
+      'maptype': 'mapnik',
+      'markers': '$lat,$lng,red-pushpin',
+    }).query;
+    return 'https://staticmap.openstreetmap.de/staticmap.php?$query';
+  }
+
+  String get _locationLabel {
+    final location = product.location.trim();
+    if (location.isNotEmpty) return location;
+    if (product.hasCoordinates) {
+      return '${product.latitude!.toStringAsFixed(5)}, ${product.longitude!.toStringAsFixed(5)}';
+    }
+    return 'Location unavailable';
+  }
+
+  String get _accuracyLabel => product.hasCoordinates ? 'Pinned location' : 'Approximate area';
+
+  Future<void> _openDirections() async {
+    final query = product.hasCoordinates
+        ? '${product.latitude},${product.longitude}'
+        : product.location.trim();
+    if (query.trim().isEmpty) return;
+    final uri = Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': query,
+    });
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (product.location.trim().isEmpty && !product.hasCoordinates) return const SizedBox.shrink();
+
+    return _SurfaceCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(width: 4, height: 18,
+              decoration: BoxDecoration(color: _T.orange, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Location & map', style: TextStyle(fontFamily: _T.fontDisplay, fontSize: 14, fontWeight: FontWeight.w700, color: _T.text, letterSpacing: -0.5))),
+            GestureDetector(
+              onTap: _openDirections,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: _T.orangeLight, borderRadius: BorderRadius.circular(999), border: Border.all(color: _T.orangeMid)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.directions_rounded, size: 14, color: _T.orangeDark),
+                  const SizedBox(width: 4),
+                  Text('Directions', style: _T.body(11.5, color: _T.orangeDark, weight: FontWeight.w800)),
+                ]),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _openDirections,
+            child: ClipRRect(
+              borderRadius: _T.r12,
+              child: SizedBox(
+                height: 196,
+                width: double.infinity,
+                child: product.hasCoordinates
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.network(
+                            _staticMapUrl(product.latitude!, product.longitude!),
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, progress) => progress == null
+                                ? child
+                                : Container(color: _T.bg, child: const Center(child: CircularProgressIndicator(color: _T.orange, strokeWidth: 2))),
+                            errorBuilder: (_, __, ___) => _MapFallback(product: product),
+                          ),
+                          const _MapOverlayGrid(),
+                          Center(
+                            child: Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: _T.orange,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 3),
+                                boxShadow: _T.shadowOrange,
+                              ),
+                              child: const Icon(Icons.place_rounded, color: Colors.white, size: 24),
+                            ),
+                          ),
+                          Positioned(
+                            right: 8, bottom: 8,
+                            child: _GlassPill(
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(Icons.open_in_new_rounded, size: 12, color: _T.text),
+                                const SizedBox(width: 4),
+                                Text('Open in Maps', style: _T.body(11, weight: FontWeight.w800)),
+                              ]),
+                            ),
+                          ),
+                          Positioned(
+                            left: 8,
+                            bottom: 8,
+                            child: _GlassPill(
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(Icons.my_location_rounded, size: 12, color: _T.green),
+                                const SizedBox(width: 4),
+                                Text(_accuracyLabel, style: _T.body(11, color: _T.text, weight: FontWeight.w800)),
+                              ]),
+                            ),
+                          ),
+                        ],
+                      )
+                    : _MapFallback(product: product),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _MapAddressRow(
+            label: _locationLabel,
+            status: _accuracyLabel,
+            hasCoordinates: product.hasCoordinates,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapAddressRow extends StatelessWidget {
+  final String label;
+  final String status;
+  final bool hasCoordinates;
+
+  const _MapAddressRow({
+    required this.label,
+    required this.status,
+    required this.hasCoordinates,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: _T.bg,
+        borderRadius: _T.r12,
+        border: Border.all(color: _T.line),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: hasCoordinates ? _T.greenLight : _T.orangeLight,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            hasCoordinates ? Icons.verified_rounded : Icons.info_rounded,
+            size: 17,
+            color: hasCoordinates ? _T.green : _T.orangeDark,
+          ),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: _T.body(13, color: _T.text, weight: FontWeight.w900, height: 1.25)),
+            const SizedBox(height: 3),
+            Text(
+              '$status. Confirm exact meeting point in chat before visiting.',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: _T.body(11.5, color: _T.textMuted, weight: FontWeight.w700, height: 1.25),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _MapFallback extends StatelessWidget {
+  final Product product;
+  const _MapFallback({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final location = product.location.trim();
+    final hasLocation = location.isNotEmpty;
+    final label = hasLocation ? location : 'Seller location';
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFEFF6FF), Color(0xFFFFF7ED)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const _MapOverlayGrid(),
+          Positioned(
+            left: 18,
+            top: 18,
+            right: 18,
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: _T.orange,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: _T.shadowOrange,
+                  ),
+                  child: const Icon(Icons.place_rounded, color: Colors.white, size: 23),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Approximate location', style: _T.display(15, color: _T.text)),
+                      const SizedBox(height: 3),
+                      Text(
+                        label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: _T.body(12, color: _T.textMuted, weight: FontWeight.w700, height: 1.25),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 20,
+            bottom: 18,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.88),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white),
+                boxShadow: _T.shadowSoft,
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.search_rounded, size: 13, color: _T.blue),
+                const SizedBox(width: 5),
+                Text('Tap to view route', style: _T.body(11.5, color: _T.text, weight: FontWeight.w800)),
+              ]),
+            ),
+          ),
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: _GlassPill(
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.directions_rounded, size: 13, color: _T.orangeDark),
+                const SizedBox(width: 5),
+                Text('Open in Maps', style: _T.body(11.5, color: _T.orangeDark, weight: FontWeight.w900)),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapOverlayGrid extends StatelessWidget {
+  const _MapOverlayGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _MapGridPainter());
+  }
+}
+
+class _MapGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final roadPaint = Paint()
+      ..color = Colors.white.withOpacity(0.58)
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+    final minorPaint = Paint()
+      ..color = const Color(0xFFCBD5E1).withOpacity(0.52)
+      ..strokeWidth = 1;
+
+    for (var x = 24.0; x < size.width; x += 44) {
+      canvas.drawLine(Offset(x, 0), Offset(x + 18, size.height), minorPaint);
+    }
+    for (var y = 22.0; y < size.height; y += 34) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y + 8), minorPaint);
+    }
+
+    final path = Path()
+      ..moveTo(-20, size.height * 0.72)
+      ..cubicTo(size.width * 0.22, size.height * 0.52, size.width * 0.48, size.height * 0.88, size.width + 20, size.height * 0.42);
+    canvas.drawPath(path, roadPaint);
+
+    final path2 = Path()
+      ..moveTo(size.width * 0.18, -10)
+      ..cubicTo(size.width * 0.34, size.height * 0.28, size.width * 0.24, size.height * 0.58, size.width * 0.55, size.height + 10);
+    canvas.drawPath(path2, roadPaint..strokeWidth = 6);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ─── Description Card ─────────────────────────────────────────────────────────
@@ -1198,15 +1572,19 @@ class _ContactBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.compactCurrency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmt = NumberFormat.compactCurrency(locale: 'en_IN', symbol: 'Rs ', decimalDigits: 0);
 
     return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 10),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-        decoration: const BoxDecoration(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+        decoration: BoxDecoration(
           color: _T.surface,
-          border: Border(top: BorderSide(color: _T.border)),
-          boxShadow: [BoxShadow(color: Color(0x16000000), blurRadius: 24, offset: Offset(0, -8))],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _T.border),
+          boxShadow: const [BoxShadow(color: Color(0x16000000), blurRadius: 24, offset: Offset(0, -8))],
         ),
         child: Row(children: [
           // Price info
@@ -1224,10 +1602,11 @@ class _ContactBar extends StatelessWidget {
 
           // Favorite
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: onFavorite,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
-              width: 44, height: 44,
+              width: 50, height: 50,
               decoration: BoxDecoration(
                 color: isFavorited ? const Color(0xFFFFF0F3) : _T.bg,
                 borderRadius: _T.r12,
@@ -1307,12 +1686,13 @@ class _PrimaryBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        width: width,
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        width: width ?? 150,
+        height: 50,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(
           gradient: onTap == null
               ? LinearGradient(colors: [_T.orange.withOpacity(0.5), _T.orangeDark.withOpacity(0.5)])
@@ -1342,9 +1722,10 @@ class _OutlineBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
     onTap: onTap,
     child: Container(
-      height: 44,
+      height: 50,
       decoration: BoxDecoration(
         color: _T.surface,
         borderRadius: _T.r12,
@@ -1492,8 +1873,7 @@ String _productWebLink(String productId) {
   final configured = dotenv.env['WEBSITE_URL']?.trim().isNotEmpty == true
       ? dotenv.env['WEBSITE_URL']!.trim()
       : dotenv.env['WEB_URL']?.trim();
-  final fallback = ApiService.baseUrl.replaceFirst(RegExp(r'/api$'), '');
-  final base = (configured == null || configured.isEmpty) ? fallback : configured;
+  final base = (configured == null || configured.isEmpty) ? AppConstants.websiteUrl : configured;
   final cleanBase = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
   return '$cleanBase/products/${Uri.encodeComponent(productId)}';
 }

@@ -73,7 +73,15 @@ class _CatItem {
   final String label, category;
   final IconData icon;
   final int? count;
-  const _CatItem(this.label, this.category, this.icon, {this.count});
+  final String? image;
+  final List<_CatItem> children;
+  final List<_HomeSlide> slides;
+  const _CatItem(this.label, this.category, this.icon, {this.count, this.image, this.children = const [], this.slides = const []});
+}
+
+class _HomeSlide {
+  final String image, title, subtitle, category, subCategory;
+  const _HomeSlide({required this.image, required this.title, required this.subtitle, required this.category, this.subCategory = ''});
 }
 
 const _staticCats = [
@@ -110,6 +118,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
 
   int     _tabIndex         = 0;
   String? _category;
+  String? _subCategory;
   String  _address          = 'Select location';
   double? _lat, _lng;
   bool    _detectingLoc     = false;
@@ -157,13 +166,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
         searchController:  _searchCtrl,
         scrollController:  _scrollCtrl,
         selectedCategory:  _category,
+        selectedSubCategory: _subCategory,
         address:           _address,
         detectingLocation: _detectingLoc,
         onSearch:          _applyFilters,
         onSearchChanged:   _onSearchChanged,
         onClearSearch:     _clearSearch,
-        onCategory: (cat) {
-          setState(() => _category = cat.isEmpty || _category == cat ? null : cat);
+        onCategory: (cat, subCat) {
+          setState(() {
+            final sameMain = cat.isEmpty || (_category == cat && (subCat == null || _subCategory == subCat));
+            _category = sameMain ? null : cat;
+            _subCategory = sameMain ? null : subCat;
+          });
           _applyFilters();
         },
         onLocationTap:   _openLocationSheet,
@@ -188,14 +202,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
       child: Scaffold(
         backgroundColor: _T.bg,
         body: IndexedStack(index: _tabIndex == 2 ? 0 : _tabIndex, children: pages),
-        bottomNavigationBar: _BottomNav(
-          selectedIndex: _tabIndex,
-          language: language,
-          onSelected: (i) {
-            if (i == 2) { _guardedNav('/create-product'); return; }
-            setState(() => _tabIndex = i);
-          },
-        ),
+        bottomNavigationBar: MediaQuery.viewInsetsOf(context).bottom > 0
+            ? const SizedBox.shrink()
+            : _BottomNav(
+                selectedIndex: _tabIndex,
+                language: language,
+                onSelected: (i) {
+                  if (i == 2) {
+                    _guardedNav('/create-product');
+                    return;
+                  }
+                  setState(() => _tabIndex = i);
+                },
+              ),
       ),
     );
   }
@@ -213,7 +232,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     }
     ref.read(productProvider.notifier).fetchProducts(
       search: _searchCtrl.text, category: _category ?? '', lat: _lat, lng: _lng,
-      minPrice: _minPrice, maxPrice: _maxPrice, sortBy: _sortBy,
+      subCategory: _subCategory ?? '', minPrice: _minPrice, maxPrice: _maxPrice, sortBy: _sortBy,
     );
   }
 
@@ -374,14 +393,16 @@ class _MarketplaceView extends ConsumerWidget {
   final TextEditingController searchController;
   final ScrollController scrollController;
   final String? selectedCategory;
+  final String? selectedSubCategory;
   final String address;
   final bool detectingLocation;
   final VoidCallback onSearch, onClearSearch, onLocationTap, onWishlist, onNotifications, onVoiceSearch, onFilter;
-  final ValueChanged<String> onSearchChanged, onCategory;
+  final ValueChanged<String> onSearchChanged;
+  final void Function(String category, String? subCategory) onCategory;
 
   const _MarketplaceView({
     required this.language,        required this.searchController,
-    required this.scrollController,required this.selectedCategory,
+    required this.scrollController,required this.selectedCategory, required this.selectedSubCategory,
     required this.address,         required this.detectingLocation,
     required this.onSearch,        required this.onSearchChanged,
     required this.onClearSearch,   required this.onCategory,
@@ -424,14 +445,18 @@ class _MarketplaceView extends ConsumerWidget {
             // ── Body ──────────────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (state.warning != null) ...[
                       _NoticeBanner(text: state.warning!), const SizedBox(height: 10),
                     ],
-                    _CategoryRail(selected: selectedCategory, onSelected: onCategory),
+                    const _HomeHeroBanner(),
+                    const SizedBox(height: 12),
+                    _HomeQuickStats(total: state.total == 0 ? state.products.length : state.total),
+                    const SizedBox(height: 12),
+                    _CategoryRail(selected: selectedCategory, selectedSubCategory: selectedSubCategory, onSelected: onCategory),
                     const SizedBox(height: 14),
                     const _RecentlyViewedSection(),
                     const SizedBox(height: 14),
@@ -469,7 +494,7 @@ class _MarketplaceView extends ConsumerWidget {
                 hasScrollBody: false,
                 child: _EmptyState(onClear: () {
                   searchController.clear();
-                  onCategory('');
+                  onCategory('', null);
                 }),
               )
             else
@@ -554,7 +579,6 @@ class _TopBar extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               _IconPill(icon: Icons.mic_none_rounded, tooltip: 'Voice search', onTap: onVoiceSearch, highlighted: true),
-              _IconPill(icon: Icons.tune_rounded, tooltip: 'Filter listings', onTap: onFilter),
               const SizedBox(width: 7),
               _IconPill(icon: Icons.favorite_border_rounded, tooltip: 'Wishlist', onTap: onWishlist),
               const SizedBox(width: 7),
@@ -676,8 +700,9 @@ class _SearchBar extends StatelessWidget {
 // ─── Category Rail ────────────────────────────────────────────────────────────
 class _CategoryRail extends StatefulWidget {
   final String? selected;
-  final ValueChanged<String> onSelected;
-  const _CategoryRail({required this.selected, required this.onSelected});
+  final String? selectedSubCategory;
+  final void Function(String category, String? subCategory) onSelected;
+  const _CategoryRail({required this.selected, required this.selectedSubCategory, required this.onSelected});
 
   @override
   State<_CategoryRail> createState() => _CategoryRailState();
@@ -704,10 +729,51 @@ class _CategoryRailState extends State<_CategoryRail> {
         final m   = Map<String, dynamic>.from(r as Map);
         final name = '${m['name'] ?? ''}'.trim();
         if (name.isEmpty) continue;
-        final cat = _backendCat(name);
+        final cat = '${m['slug'] ?? ''}'.trim().isNotEmpty ? '${m['slug']}'.trim() : _backendCat(name);
         if (list.any((x) => x.label.toLowerCase() == name.toLowerCase() && x.category == cat)) continue;
-        list.add(_CatItem(name, cat, _iconFor('$name ${m['icon'] ?? ''}'),
-            count: _toInt(m['productsCount'] ?? m['productCount'])));
+        final children = (m['children'] is List ? m['children'] as List : const <dynamic>[])
+            .whereType<Map>()
+            .map((child) {
+              final cm = Map<String, dynamic>.from(child);
+              final childName = '${cm['name'] ?? ''}'.trim();
+              final childCat = '${cm['slug'] ?? ''}'.trim().isNotEmpty ? '${cm['slug']}'.trim() : _backendCat(childName);
+              return _CatItem(
+                childName,
+                childCat,
+                _iconFor('$childName ${cm['icon'] ?? ''}'),
+                count: _toInt(cm['productsCount'] ?? cm['productCount']),
+                image: '${cm['image'] ?? ''}'.trim().isEmpty ? null : '${cm['image']}'.trim(),
+              );
+            })
+            .where((child) => child.label.isNotEmpty)
+            .toList();
+        final meta = m['meta'] is Map ? Map<String, dynamic>.from(m['meta']) : <String, dynamic>{};
+        final slides = meta['showOnHome'] == false
+            ? <_HomeSlide>[]
+            : (meta['carouselImages'] is List ? meta['carouselImages'] as List : const <dynamic>[])
+                .whereType<Map>()
+                .map((slide) {
+                  final sm = Map<String, dynamic>.from(slide);
+                  final image = '${sm['image'] ?? ''}'.trim();
+                  if (image.isEmpty) return null;
+                  return _HomeSlide(
+                    image: image,
+                    title: '${sm['title'] ?? meta['carouselTitle'] ?? name}'.trim(),
+                    subtitle: '${sm['subtitle'] ?? meta['carouselSubtitle'] ?? m['description'] ?? ''}'.trim(),
+                    category: cat,
+                  );
+                })
+                .whereType<_HomeSlide>()
+                .toList();
+        list.add(_CatItem(
+          name,
+          cat,
+          _iconFor('$name ${m['icon'] ?? ''}'),
+          count: _toInt(m['productsCount'] ?? m['productCount']),
+          image: '${m['image'] ?? ''}'.trim().isEmpty ? null : '${m['image']}'.trim(),
+          children: children,
+          slides: slides,
+        ));
       }
       return list.length > 1 ? list : _staticCats;
     } catch (_) { return _staticCats; }
@@ -719,8 +785,13 @@ class _CategoryRailState extends State<_CategoryRail> {
       future: _future,
       builder: (context, snap) {
         final items   = (snap.data?.isNotEmpty == true) ? snap.data! : _staticCats;
-        final visible = _expanded ? items : items;
+        final visible = items.where((item) => item.category.trim().isNotEmpty).toList();
         final tileW   = MediaQuery.sizeOf(context).width >= 700 ? 100.0 : 86.0;
+        final activeParent = items.firstWhere(
+          (item) => item.category == widget.selected,
+          orElse: () => const _CatItem('', '', Icons.apps_rounded),
+        );
+        final activeChildren = activeParent.children;
 
         return _Card(
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
@@ -732,7 +803,7 @@ class _CategoryRailState extends State<_CategoryRail> {
                 Container(width: 3, height: 16,
                     decoration: BoxDecoration(color: _T.orange, borderRadius: BorderRadius.circular(2))),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Browse Categories', style: _T.display(14, c: _T.text))),
+                Expanded(child: Text('Categories', style: _T.display(14, c: _T.text))),
                 if (false && items.length > 8)
                   GestureDetector(
                     onTap: () => setState(() => _expanded = !_expanded),
@@ -765,10 +836,30 @@ class _CategoryRailState extends State<_CategoryRail> {
                               (item.category.isEmpty && widget.selected == null);
                           return SizedBox(width: tileW,
                               child: _CatTile(item: item, active: active,
-                                  onTap: () => widget.onSelected(item.category)));
+                                  onTap: () => widget.onSelected(item.category, null)));
                         },
                       ),
               ),
+              if (activeChildren.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: activeChildren.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final child = activeChildren[i];
+                      final active = child.category == widget.selectedSubCategory;
+                      return _SubCatChip(
+                        label: child.label,
+                        active: active,
+                        onTap: () => widget.onSelected(activeParent.category, child.category),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -802,12 +893,15 @@ class _CatTile extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               width: 50, height: 50,
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 color: active ? _T.orange.withOpacity(0.12) : _T.surface,
                 borderRadius: _T.r10,
                 border: Border.all(color: active ? _T.orangeMid : _T.border),
               ),
-              child: Icon(item.icon, color: active ? _T.orangeDark : _T.textMuted, size: 28),
+              child: item.image == null
+                  ? Icon(item.icon, color: active ? _T.orangeDark : _T.textMuted, size: 28)
+                  : CachedNetworkImage(imageUrl: item.image!, fit: BoxFit.cover),
             ),
             const SizedBox(height: 7),
             Text(item.label, textAlign: TextAlign.center, maxLines: 2,
@@ -836,59 +930,252 @@ class _ShimmerCatTile extends StatelessWidget {
   );
 }
 
-// ─── Promo Banner ─────────────────────────────────────────────────────────────
-class _PromoBanner extends StatelessWidget {
-  const _PromoBanner();
+class _SubCatChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _SubCatChip({required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: active ? _T.orange : _T.orangeLight,
+        borderRadius: _T.r99,
+        border: Border.all(color: active ? _T.orange : _T.orangeMid),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: _T.body(11.5, c: active ? Colors.white : _T.orangeDark, w: FontWeight.w800),
+      ),
+    ),
+  );
+}
+
+// ─── Home Hero ────────────────────────────────────────────────────────────────
+class _HomeHeroBanner extends StatelessWidget {
+  const _HomeHeroBanner();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFF7ED), Color(0xFFFEF3C7)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
-        borderRadius: _T.r14,
-        border: Border.all(color: _T.orangeMid),
-        boxShadow: _T.shadowSm,
+        color: _T.surface,
+        borderRadius: _T.r20,
+        border: Border.all(color: _T.border),
+        boxShadow: _T.shadowMd,
       ),
-      child: Row(
-        children: [
-          // Icon box
-          Container(
-            width: 46, height: 46,
-            decoration: BoxDecoration(
-              color: _T.orange, borderRadius: _T.r12,
-              boxShadow: _T.shadowOr,
+      child: AspectRatio(
+        aspectRatio: 2048 / 999,
+        child: Image.asset(
+          'assets/images/mobile_banner.png',
+          width: double.infinity,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: _T.orangeLight,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(18),
+            child: Text(
+              'Buy Smart. Sell Fast. Connect Easily.',
+              textAlign: TextAlign.center,
+              style: _T.display(18, c: _T.orangeDark),
             ),
-            child: const Icon(Icons.sell_rounded, color: Colors.white, size: 22),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Sell faster on BuySellAdda', style: _T.display(13, c: _T.text)),
-              const SizedBox(height: 3),
-              Text('Post clear photos & chat with buyers instantly.',
-                  style: _T.body(12, c: _T.textMuted)),
-            ]),
-          ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/create-product'),
+        ),
+      ),
+    );
+
+    final wide = MediaQuery.sizeOf(context).width >= 700;
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: _T.surface,
+        borderRadius: _T.r20,
+        border: Border.all(color: _T.border),
+        boxShadow: _T.shadowMd,
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -40,
+            bottom: -56,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              width: wide ? 240 : 170,
+              height: wide ? 240 : 170,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [_T.orange, _T.orangeDark]),
-                borderRadius: _T.r10,
-                boxShadow: _T.shadowOr,
+                color: _T.blue.withOpacity(0.10),
+                shape: BoxShape.circle,
               ),
-              child: Text('Sell', style: _T.body(13, c: Colors.white, w: FontWeight.w800)),
+            ),
+          ),
+          Positioned(
+            right: -18,
+            top: -34,
+            child: Container(
+              width: wide ? 132 : 96,
+              height: wide ? 132 : 96,
+              decoration: BoxDecoration(
+                color: _T.orange.withOpacity(0.14),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(wide ? 22 : 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _T.orangeLight,
+                          borderRadius: _T.r99,
+                          border: Border.all(color: _T.orangeMid),
+                        ),
+                        child: Text('BUY • SELL • CONNECT',
+                            style: _T.body(11, c: _T.orangeDark, w: FontWeight.w900)),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('Har Deal,\nEk Nayi Shuruaat',
+                          style: _T.display(wide ? 26 : 22, c: _T.text, w: FontWeight.w900)),
+                      const SizedBox(height: 8),
+                      Text('Find trusted local deals, chat safely, and post your ad in minutes.',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: _T.body(13, c: _T.textMuted, w: FontWeight.w600, h: 1.35)),
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: const [
+                          _HeroChip(icon: Icons.verified_user_outlined, label: 'Trusted'),
+                          _HeroChip(icon: Icons.chat_bubble_outline_rounded, label: 'Real Chat'),
+                          _HeroChip(icon: Icons.local_offer_outlined, label: 'Best Deals'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: wide ? 150 : 108,
+                  height: wide ? 150 : 124,
+                  decoration: BoxDecoration(
+                    color: _T.bg,
+                    borderRadius: _T.r20,
+                    border: Border.all(color: _T.border),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        top: 14,
+                        child: Image.asset('assets/images/logo.png',
+                            width: wide ? 116 : 88, fit: BoxFit.contain),
+                      ),
+                      Positioned(
+                        bottom: 18,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [_T.blue, _T.orange, _T.green],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: _T.r16,
+                            boxShadow: _T.shadowSm,
+                          ),
+                          child: const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 34),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeroChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _HeroChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+    decoration: BoxDecoration(
+      color: _T.bg,
+      borderRadius: _T.r99,
+      border: Border.all(color: _T.border),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 14, color: _T.blue),
+      const SizedBox(width: 5),
+      Text(label, style: _T.body(11, c: _T.text, w: FontWeight.w800)),
+    ]),
+  );
+}
+
+class _HomeQuickStats extends StatelessWidget {
+  final int total;
+  const _HomeQuickStats({required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (Icons.shopping_bag_outlined, '${total > 0 ? total : 'Live'}', 'Active Ads', _T.blueLight, _T.blue),
+      (Icons.location_on_outlined, 'Near You', 'Local Deals', _T.greenLight, _T.green),
+      (Icons.security_outlined, 'Safe', 'Chat First', _T.orangeLight, _T.orange),
+    ];
+
+    return Row(
+      children: items.map((item) => Expanded(
+        child: Container(
+          margin: EdgeInsets.only(right: item == items.last ? 0 : 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+          decoration: BoxDecoration(
+            color: _T.surface,
+            borderRadius: _T.r14,
+            border: Border.all(color: _T.border),
+            boxShadow: _T.shadowSm,
+          ),
+          child: Row(children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(color: item.$4, borderRadius: _T.r10),
+              child: Icon(item.$1, color: item.$5, size: 18),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${item.$2}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: _T.body(12, c: _T.text, w: FontWeight.w900)),
+              const SizedBox(height: 1),
+              Text(item.$3, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: _T.body(10, c: _T.textMuted, w: FontWeight.w700)),
+            ])),
+          ]),
+        ),
+      )).toList(),
     );
   }
 }
@@ -1414,33 +1701,107 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final bottomGap = bottomInset > 0 ? bottomInset + 10.0 : 14.0;
     final items = [
       _NavItem(Icons.home_outlined,         Icons.home_rounded,         tr(language, 'home')),
       _NavItem(Icons.assignment_outlined,   Icons.assignment_rounded,   tr(language, 'my_ads')),
-      _NavItem(Icons.add_circle_outline,    Icons.add_circle_rounded,   'Sell'),
+      _NavItem(Icons.add_rounded,            Icons.add_rounded,          'Sell'),
       _NavItem(Icons.chat_bubble_outline,   Icons.chat_bubble_rounded,  'Chats'),
       _NavItem(Icons.person_outline_rounded,Icons.person_rounded,       tr(language, 'account')),
     ];
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: _T.surface,
-        border: Border(top: BorderSide(color: _T.border)),
-        boxShadow: [BoxShadow(color: Color(0x12000000), blurRadius: 20, offset: Offset(0, -6))],
-      ),
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: List.generate(items.length, (i) => Expanded(
-            child: _NavBtn(
-              item:   items[i],
-              active: selectedIndex == i,
-              isSell: i == 2,
-              onTap:  () => onSelected(i),
+    return SizedBox(
+      height: 88 + bottomGap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          Container(
+            margin: EdgeInsets.fromLTRB(12, 0, 12, bottomGap),
+            decoration: BoxDecoration(
+              color: _T.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: _T.border),
+              boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 26, offset: Offset(0, 10))],
             ),
-          )),
-        ),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            child: SizedBox(
+              height: 60,
+              child: Row(
+                children: [
+                  Expanded(child: _NavBtn(item: items[0], active: selectedIndex == 0, onTap: () => onSelected(0))),
+                  Expanded(child: _NavBtn(item: items[1], active: selectedIndex == 1, onTap: () => onSelected(1))),
+                  const Expanded(child: SizedBox()),
+                  Expanded(child: _NavBtn(item: items[3], active: selectedIndex == 3, onTap: () => onSelected(3))),
+                  Expanded(child: _NavBtn(item: items[4], active: selectedIndex == 4, onTap: () => onSelected(4))),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            child: _SellFab(onTap: () => onSelected(2)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SellFab extends StatefulWidget {
+  final VoidCallback onTap;
+  const _SellFab({required this.onTap});
+
+  @override
+  State<_SellFab> createState() => _SellFabState();
+}
+
+class _SellFabState extends State<_SellFab> {
+  bool _pressed = false;
+
+  void _setPressed(bool v) => setState(() => _pressed = v);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => _setPressed(true),
+      onTapCancel: () => _setPressed(false),
+      onTapUp: (_) => _setPressed(false),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedScale(
+            duration: const Duration(milliseconds: 140),
+            scale: _pressed ? 0.9 : 1,
+            curve: Curves.easeOut,
+            child: Container(
+              width: 58, height: 58,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: _T.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFFFEDD5), width: 2),
+              ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [_T.orange, _T.orangeDark],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  boxShadow: [BoxShadow(color: Color(0x40F97316), blurRadius: 18, offset: Offset(0, 8))],
+                ),
+                child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text('Sell', style: _T.body(10.5, c: _T.orangeDark, w: FontWeight.w800)),
+        ],
       ),
     );
   }
@@ -1448,43 +1809,68 @@ class _BottomNav extends StatelessWidget {
 
 class _NavBtn extends StatelessWidget {
   final _NavItem item;
-  final bool active, isSell;
+  final bool active;
   final VoidCallback onTap;
-  const _NavBtn({required this.item, required this.active, required this.isSell, required this.onTap});
+  const _NavBtn({required this.item, required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final Color fg = isSell ? _T.orange : active ? _T.orange : _T.textMuted;
+    final Color fg = active ? _T.orange : _T.textMuted;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        if (!active) HapticFeedback.selectionClick();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(horizontal: 2),
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         decoration: BoxDecoration(
-          color: active && !isSell ? _T.orangeLight : Colors.transparent,
-          borderRadius: _T.r10,
+          color: active ? _T.orangeLight : Colors.transparent,
+          borderRadius: _T.r14,
+          border: active ? Border.all(color: _T.orangeMid) : null,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            isSell
-                ? Container(
-                    width: 58, height: 42,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [_T.orange, _T.orangeDark]),
-                      borderRadius: _T.r14,
-                      boxShadow: _T.shadowOr,
-                    ),
-                    child: Icon(active ? item.activeIcon : item.icon, color: Colors.white, size: 28),
-                  )
-                : Icon(active ? item.activeIcon : item.icon, color: fg, size: 22),
-            const SizedBox(height: 3),
-            Text(item.label, maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: _T.body(10, c: fg, w: isSell || active ? FontWeight.w800 : FontWeight.w600)),
-          ],
+        child: SizedBox(
+          height: 48,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: active ? 32 : 30,
+                height: active ? 28 : 27,
+                decoration: BoxDecoration(
+                  color: active ? _T.orange : Colors.transparent,
+                  borderRadius: _T.r10,
+                ),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 1, end: active ? 1.06 : 1.0),
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+                  child: Icon(
+                    active ? item.activeIcon : item.icon,
+                    color: active ? Colors.white : fg,
+                    size: active ? 19 : 21,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _T.body(10, c: fg, w: active ? FontWeight.w900 : FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

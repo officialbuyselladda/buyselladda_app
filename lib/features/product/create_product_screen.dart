@@ -33,7 +33,14 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
   List<String> _categories = AppConstants.categories;
   Map<String, List<String>> _subCategories = {};
   Position? _position;
+  bool _findingLocation = false;
+  bool _submitting = false;
+  String? _submitStatus;
+  String? _submitError;
+  int _uploadedCount = 0;
+  int _totalUploadCount = 0;
   bool get _editing => widget.product != null;
+  bool get _isBusy => _submitting || ref.read(productProvider).isLoading;
 
   @override
   void initState() {
@@ -67,47 +74,74 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
     final ImagePicker picker = ImagePicker();
     final List<XFile>? picked = await picker.pickMultiImage();
     if (picked != null) {
+      final remainingSlots = 8 - _images.length;
+      if (remainingSlots <= 0) {
+        _showMessage('You can add up to 8 photos');
+        return;
+      }
+      final selected = picked.take(remainingSlots).toList();
+      for (final image in selected) {
+        final size = await image.length();
+        if (size > 5 * 1024 * 1024) {
+          _showMessage('${image.name} is larger than 5MB. Please choose a smaller photo.');
+          return;
+        }
+      }
       setState(() {
-        _images.addAll(picked);
+        _images.addAll(selected);
       });
+      if (picked.length > selected.length) {
+        _showMessage('Only 8 photos are allowed for one ad');
+      }
     }
   }
 
   Future<void> _getLocation() async {
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please allow location permission')),
-      );
-      return;
-    }
-
-    final position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-    String address = '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
-    try {
-      final places = await placemarkFromCoordinates(position.latitude, position.longitude);
-      if (places.isNotEmpty) {
-        final place = places.first;
-        address = [
-          place.street,
-          place.locality,
-          place.administrativeArea,
-          place.country,
-        ].where((part) => part != null && part.trim().isNotEmpty).join(', ');
-      }
-    } catch (_) {}
-
     setState(() {
-      _position = position;
-      _location = address;
-      _locationController.text = address;
+      _findingLocation = true;
     });
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please allow location permission')),
+        );
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      String address = '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+      try {
+        final places = await placemarkFromCoordinates(position.latitude, position.longitude);
+        if (places.isNotEmpty) {
+          final place = places.first;
+          address = [
+            place.street,
+            place.locality,
+            place.administrativeArea,
+            place.country,
+          ].where((part) => part != null && part.trim().isNotEmpty).join(', ');
+        }
+      } catch (_) {}
+
+      setState(() {
+        _position = position;
+        _location = address;
+        _locationController.text = address;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _findingLocation = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -145,6 +179,8 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
   Widget build(BuildContext context) {
     final productState = ref.watch(productProvider);
 
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
       appBar: AppBar(
@@ -168,8 +204,10 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
                     OutlinedButton.icon(
                       onPressed: _pickImages,
                       icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: Text(_images.isNotEmpty ? '${_images.length} images selected' : _editing ? 'Add new photos' : 'Add photos'),
+                      label: Text(_images.isNotEmpty ? '${_images.length}/8 photos selected' : _editing ? 'Add new photos' : 'Add photos'),
                     ),
+                    const SizedBox(height: 8),
+                    const Text('Add clear real photos. Max 8 photos, 5MB each.', style: TextStyle(color: AppConstants.textSecondaryColor, fontSize: 12)),
                     if (_images.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       SizedBox(
@@ -226,7 +264,13 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
                       controller: _priceController,
                       decoration: const InputDecoration(labelText: 'Price', prefixText: 'Rs '),
                       keyboardType: TextInputType.number,
-                      validator: (value) => double.tryParse(value ?? '') == null ? 'Enter valid price' : null,
+                      validator: (value) {
+                        final price = double.tryParse((value ?? '').trim());
+                        if (price == null) return 'Enter valid price';
+                        if (price < 1) return 'Price must be at least Rs 1';
+                        if (price > 100000000) return 'Price is too high';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 14),
                     DropdownButtonFormField<String>(
@@ -275,17 +319,48 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF8F8),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF8AD8D8)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Current location for this ad', style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 8),
+                          Text(
+                            _location.isNotEmpty
+                                ? _location
+                                : 'No location attached yet. Tap the button to use your current location.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF256D6D)),
+                          ),
+                          if (_position != null) ...[
+                            const SizedBox(height: 6),
+                            Text('Lat: ${''}${_position!.latitude.toStringAsFixed(5)}, Lng: ${_position!.longitude.toStringAsFixed(5)}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF1F4D4D))),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     OutlinedButton.icon(
-                      onPressed: _getLocation,
+                      onPressed: _findingLocation ? null : _getLocation,
                       icon: const Icon(Icons.my_location_rounded),
-                      label: Text(_location.isEmpty ? 'Use current location' : _location, overflow: TextOverflow.ellipsis),
+                      label: Text(_findingLocation ? 'Fetching location...' : (_location.isEmpty ? 'Use current location' : 'Update current location')),
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
                       controller: _locationController,
                       decoration: const InputDecoration(labelText: 'Or enter location manually'),
-                      onChanged: (value) => _location = value.trim(),
-                      validator: (_) => _location.trim().isEmpty ? 'Add location' : null,
+                      onChanged: (value) {
+                        _location = value.trim();
+                        _position = null;
+                      },
+                      validator: (_) => _locationController.text.trim().isEmpty ? 'Add location' : null,
                     ),
                   ],
                 ),
@@ -294,65 +369,128 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
                 const SizedBox(height: 12),
                 Text(productState.error!, style: const TextStyle(color: AppConstants.errorColor)),
               ],
+              if (_submitError != null) ...[
+                const SizedBox(height: 12),
+                Text(_submitError!, style: const TextStyle(color: AppConstants.errorColor, fontWeight: FontWeight.w700)),
+              ],
+              if (_submitStatus != null) ...[
+                const SizedBox(height: 12),
+                _PostingStatusCard(
+                  text: _submitStatus!,
+                  uploaded: _uploadedCount,
+                  total: _totalUploadCount,
+                ),
+              ],
             ],
           ),
         ),
       ),
-      bottomSheet: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-          decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: AppConstants.borderColor))),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: productState.isLoading ? null : _submit,
-              icon: productState.isLoading
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Icon(_editing ? Icons.save_outlined : Icons.publish_outlined),
-              label: Text(_editing ? 'Save changes' : 'Post ad for review'),
+      bottomNavigationBar: keyboardOpen
+          ? const SizedBox.shrink()
+          : SafeArea(
+              minimum: const EdgeInsets.only(bottom: 10),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppConstants.borderColor),
+                  boxShadow: const [BoxShadow(color: Color(0x12000000), blurRadius: 18, offset: Offset(0, -6))],
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: FilledButton.icon(
+                    onPressed: (productState.isLoading || _submitting) ? null : _submit,
+                    icon: (productState.isLoading || _submitting)
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Icon(_editing ? Icons.save_outlined : Icons.publish_outlined),
+                    label: Text(_editing ? 'Save changes' : 'Post ad for review'),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
   Future<void> _submit() async {
-    if (_formKey.currentState!.validate()) {
-      if (!_editing && _images.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please add at least one image')),
-        );
-        return;
-      }
-      if (_location.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please add exact location')),
-        );
-        return;
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+    if (_isBusy) return;
+
+    if (!_editing && _images.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one image')),
+      );
+      return;
+    }
+
+    if (_locationController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add exact location')),
+      );
+      return;
+    }
+
+    setState(() {
+      _submitError = null;
+      _submitStatus = _editing ? 'Saving ad details...' : 'Checking posting eligibility...';
+      _submitting = true;
+      _uploadedCount = 0;
+      _totalUploadCount = _images.length;
+    });
+
+    final uploadedImages = <Map<String, String>>[];
+
+    try {
+      if (!_editing) {
+        final eligibilityResponse = await ApiService.get('${AppConstants.productPath}/posting-eligibility');
+        final eligibilityPayload = eligibilityResponse.data['data'] ?? eligibilityResponse.data;
+        if (eligibilityPayload is Map && eligibilityPayload['canPost'] == false) {
+          final monthly = eligibilityPayload['monthly'] is Map ? eligibilityPayload['monthly'] as Map : null;
+          final daily = eligibilityPayload['daily'] is Map ? eligibilityPayload['daily'] as Map : null;
+          throw Exception('Posting limit reached. Daily remaining: ${daily?['remaining'] ?? 0}, monthly remaining: ${monthly?['remaining'] ?? 0}.');
+        }
       }
 
-      final uploadedImages = <Map<String, dynamic>>[];
       for (final image in _images) {
+        if (!mounted) return;
+        setState(() {
+          _submitStatus = 'Uploading photo ${_uploadedCount + 1} of $_totalUploadCount...';
+        });
         final formData = FormData.fromMap({
           'image': await MultipartFile.fromFile(image.path, filename: image.name),
         });
         final response = await ApiService.post(AppConstants.uploadPath, formData: formData);
         final payload = response.data['data'] ?? response.data;
+        final url = payload is Map ? '${payload['url'] ?? ''}'.trim() : '';
+        if (url.isEmpty) {
+          throw Exception('Photo upload failed. Please try another image.');
+        }
         uploadedImages.add({
-          'public_id': payload['public_id'],
-          'url': payload['url'],
+          'public_id': payload is Map ? '${payload['public_id'] ?? ''}' : '',
+          'url': url,
+        });
+        if (!mounted) return;
+        setState(() {
+          _uploadedCount += 1;
         });
       }
 
-      final data = {
+      if (!mounted) return;
+      setState(() {
+        _submitStatus = _editing ? 'Sending updated ad for review...' : 'Creating your ad...';
+      });
+
+      final data = <String, dynamic>{
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
-        'price': double.parse(_priceController.text),
-        'category': _category,
-        if (_subCategory.isNotEmpty) 'subCategory': _subCategory,
+        'price': double.parse(_priceController.text.trim()),
+        'category': _category.trim(),
+        if (_subCategory.trim().isNotEmpty) 'subCategory': _subCategory.trim(),
         'condition': _condition,
-        'location': _location,
+        'location': _locationController.text.trim(),
         if (!_editing || uploadedImages.isNotEmpty) 'images': uploadedImages,
         if (_position != null)
           'locationCoords': {
@@ -360,18 +498,97 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
             'coordinates': [_position!.longitude, _position!.latitude],
           },
       };
+
+      final original = widget.product;
+      final sameLocation = original != null && original.location.trim() == _locationController.text.trim();
+      if (original != null && _position == null && _editing && sameLocation && original.hasCoordinates) {
+        data['locationCoords'] = {
+          'type': 'Point',
+          'coordinates': [original.longitude, original.latitude],
+        };
+      }
+
       if (_editing) {
         await ApiService.put('${AppConstants.productPath}/${widget.product!.id}', data: data);
         await ref.read(productProvider.notifier).fetchProducts();
       } else {
         await ref.read(productProvider.notifier).createProduct(data);
       }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_editing ? 'Ad updated and sent for review' : 'Ad submitted for admin approval')),
       );
-      Navigator.pop(context);
+      Navigator.pushNamedAndRemoveUntil(context, '/my-ads', (route) => route.settings.name == '/home');
+    } catch (error) {
+      if (!mounted) return;
+      final errorMessage = _readSubmitError(error);
+      setState(() {
+        _submitStatus = null;
+        _submitError = errorMessage;
+        _submitting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _readSubmitError(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map && data['message'] != null) return '${data['message']}';
+      return error.message ?? 'Could not post ad. Please try again.';
+    }
+    final providerError = ref.read(productProvider).error;
+    if (providerError != null && providerError.trim().isNotEmpty) return providerError;
+    final text = error.toString().replaceFirst('Exception: ', '').trim();
+    return text.isEmpty ? 'Could not post ad. Please try again.' : text;
+  }
+}
+
+class _PostingStatusCard extends StatelessWidget {
+  final String text;
+  final int uploaded;
+  final int total;
+
+  const _PostingStatusCard({
+    required this.text,
+    required this.uploaded,
+    required this.total,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = total <= 0 ? null : uploaded / total;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppConstants.secondaryLightColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+              const SizedBox(width: 10),
+              Expanded(child: Text(text, style: const TextStyle(fontWeight: FontWeight.w800, color: AppConstants.textPrimaryColor))),
+            ],
+          ),
+          if (progress != null) ...[
+            const SizedBox(height: 10),
+            LinearProgressIndicator(value: progress.clamp(0.0, 1.0).toDouble()),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -425,4 +642,3 @@ class _SectionCard extends StatelessWidget {
     );
   }
 }
-

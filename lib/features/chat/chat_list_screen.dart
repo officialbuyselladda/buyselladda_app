@@ -36,8 +36,13 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
   Future<List<Map<String, dynamic>>> _fetchChats() async {
     final response = await ApiService.get(AppConstants.chatPath);
     final payload = response.data['data'] ?? response.data;
-    if (payload is! List) return [];
-    return payload.map((chat) => Map<String, dynamic>.from(chat as Map)).toList();
+    final raw = payload is List
+        ? payload
+        : payload is Map
+            ? (payload['chats'] ?? payload['data'] ?? payload['items'] ?? [])
+            : [];
+    if (raw is! List) return [];
+    return raw.whereType<Map>().map((chat) => Map<String, dynamic>.from(chat)).toList();
   }
 
   Future<void> _refresh() async {
@@ -248,14 +253,15 @@ class _ChatTile extends StatelessWidget {
     final lastSeen = DateTime.tryParse('${presence[userId]?['lastSeen'] ?? otherUser?['lastSeen'] ?? ''}');
 
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Ink(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: unread > 0 ? AppConstants.primaryLightColor : Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: unread > 0 ? AppConstants.primaryBorderColor : AppConstants.borderColor),
+          boxShadow: const [BoxShadow(color: Color(0x08111827), blurRadius: 16, offset: Offset(0, 8))],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,14 +326,17 @@ class _ChatTile extends StatelessWidget {
                   if (product != null) ...[
                     const SizedBox(height: 9),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-                      decoration: BoxDecoration(color: AppConstants.backgroundColor, borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: AppConstants.backgroundColor,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppConstants.borderColor),
+                      ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.inventory_2_outlined, size: 14, color: AppConstants.textSecondaryColor),
-                          const SizedBox(width: 5),
-                          Flexible(child: Text('${product['title'] ?? 'Ad'}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+                          _ProductThumb(url: _firstProductImage(product['images'])),
+                          const SizedBox(width: 7),
+                          Expanded(child: Text('${product['title'] ?? 'Ad'}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))),
                           if (_toNum(product['price']) != null) ...[
                             const SizedBox(width: 8),
                             Text('Rs ${NumberFormat.decimalPattern('en_IN').format(_toNum(product['price']))}', style: const TextStyle(fontSize: 12, color: AppConstants.primaryDarkColor, fontWeight: FontWeight.w900)),
@@ -343,6 +352,37 @@ class _ChatTile extends StatelessWidget {
             const Icon(Icons.chevron_right_rounded, color: AppConstants.textSecondaryColor),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ProductThumb extends StatelessWidget {
+  final String? url;
+
+  const _ProductThumb({this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(7),
+      child: SizedBox(
+        width: 30,
+        height: 30,
+        child: url == null || url!.isEmpty
+            ? Container(
+                color: Colors.white,
+                child: const Icon(Icons.inventory_2_outlined, size: 16, color: AppConstants.textSecondaryColor),
+              )
+            : CachedNetworkImage(
+                imageUrl: url!,
+                fit: BoxFit.cover,
+                placeholder: (context, _) => Container(color: Colors.white),
+                errorWidget: (context, _, __) => Container(
+                  color: Colors.white,
+                  child: const Icon(Icons.inventory_2_outlined, size: 16, color: AppConstants.textSecondaryColor),
+                ),
+              ),
       ),
     );
   }
@@ -436,6 +476,14 @@ Map<String, dynamic>? _asMap(dynamic value) {
 String? _avatarUrl(dynamic avatar) {
   if (avatar is String && avatar.isNotEmpty) return avatar;
   if (avatar is Map && avatar['url'] != null) return '${avatar['url']}';
+  return null;
+}
+
+String? _firstProductImage(dynamic images) {
+  if (images is! List || images.isEmpty) return null;
+  final first = images.first;
+  if (first is String && first.isNotEmpty) return first;
+  if (first is Map && first['url'] != null) return '${first['url']}';
   return null;
 }
 

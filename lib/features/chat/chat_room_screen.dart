@@ -107,9 +107,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       final response = await ApiService.get('${AppConstants.chatPath}/${widget.chatId}/messages');
       final payload = _asMap(response.data['data'] ?? response.data);
       final chat = _asMap(payload?['chat']);
-      final messages = (payload?['messages'] as List? ?? [])
-          .map((message) => Map<String, dynamic>.from(message as Map))
-          .toList();
+      final rawMessages = payload?['messages'];
+      final messageList = rawMessages is List ? rawMessages : const [];
+      final messages = messageList.whereType<Map>().map((message) => Map<String, dynamic>.from(message)).toList();
       if (!mounted) return;
       setState(() {
         _chat = chat ?? _chat;
@@ -155,7 +155,11 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     try {
       final response = await ApiService.post('${AppConstants.chatPath}/${widget.chatId}/send', data: {'text': text});
       final payload = response.data['data'] ?? response.data;
-      final saved = Map<String, dynamic>.from(payload as Map);
+      final savedPayload = _asMap(payload);
+      final saved = _asMap(savedPayload?['message']) ?? savedPayload;
+      if (saved == null) {
+        throw Exception('Invalid message response');
+      }
       if (!mounted) return;
       setState(() {
         _messages = _mergeSavedMessage(_messages, tempId, saved);
@@ -234,7 +238,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
   void _handleSocketMessage(dynamic data) {
     final incoming = _asMap(data);
-    if (incoming == null || '${incoming['chat'] ?? widget.chatId}' != widget.chatId) return;
+    if (incoming == null || !_sameChat(incoming, widget.chatId)) return;
     if (!mounted) return;
     setState(() {
       _otherTyping = false;
@@ -273,6 +277,13 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       return withoutTemp;
     }
     return [...withoutTemp, incoming];
+  }
+
+  bool _sameChat(Map<String, dynamic> message, String chatId) {
+    final raw = message['chat'] ?? message['chatId'];
+    if (raw == null) return true;
+    if (raw is Map) return '${raw['_id'] ?? raw['id'] ?? ''}' == chatId;
+    return '$raw' == chatId;
   }
 
   List<Map<String, dynamic>> _mergeSavedMessage(List<Map<String, dynamic>> current, String tempId, Map<String, dynamic> saved) {
@@ -403,7 +414,11 @@ class _RoomHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(6, 8, 12, 10),
-      decoration: const BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: AppConstants.borderColor))),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: AppConstants.borderColor)),
+        boxShadow: [BoxShadow(color: Color(0x08111827), blurRadius: 12, offset: Offset(0, 4))],
+      ),
       child: Row(
         children: [
           IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back_rounded)),
@@ -456,7 +471,12 @@ class _ProductStrip extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppConstants.borderColor)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppConstants.borderColor),
+        boxShadow: const [BoxShadow(color: Color(0x07111827), blurRadius: 14, offset: Offset(0, 6))],
+      ),
       child: Row(
         children: [
           Container(
@@ -464,7 +484,14 @@ class _ProductStrip extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(color: AppConstants.backgroundColor, borderRadius: BorderRadius.circular(8)),
             clipBehavior: Clip.antiAlias,
-            child: image == null ? const Icon(Icons.image_not_supported_outlined) : CachedNetworkImage(imageUrl: image, fit: BoxFit.cover),
+            child: image == null
+                ? const Icon(Icons.image_not_supported_outlined, color: AppConstants.textSubtleColor)
+                : CachedNetworkImage(
+                    imageUrl: image,
+                    fit: BoxFit.cover,
+                    placeholder: (context, _) => Container(color: AppConstants.backgroundColor),
+                    errorWidget: (context, _, __) => const Icon(Icons.image_not_supported_outlined, color: AppConstants.textSubtleColor),
+                  ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -671,37 +698,50 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 9, 12, 12),
-      decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: AppConstants.borderColor))),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              minLines: 1,
-              maxLines: 4,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => onSend(),
-              decoration: const InputDecoration(
-                hintText: 'Type your message...',
-                prefixIcon: Icon(Icons.chat_bubble_outline_rounded),
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 9, 12, 10),
+        decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: AppConstants.borderColor))),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                minLines: 1,
+                maxLines: 4,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) {
+                  if (controller.text.trim().isNotEmpty && !sending) onSend();
+                },
+                decoration: const InputDecoration(
+                  hintText: 'Type your message...',
+                  prefixIcon: Icon(Icons.chat_bubble_outline_rounded),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: IconButton.filled(
-              tooltip: 'Send',
-              onPressed: sending ? null : onSend,
-              icon: sending
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.send_rounded),
+            const SizedBox(width: 8),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder: (context, value, _) {
+                final canSend = value.text.trim().isNotEmpty && !sending;
+                return SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: IconButton.filled(
+                    tooltip: 'Send',
+                    onPressed: canSend ? onSend : null,
+                    icon: sending
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.send_rounded),
+                  ),
+                );
+              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

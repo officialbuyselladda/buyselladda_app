@@ -5,6 +5,7 @@ class AppConstants {
   static const String appName = 'BuySellAdda';
   static const String tagline = 'Har Deal, Ek Nayi Shuruaat';
   static const String appVersion = '1.0.0';
+  static const String websiteUrl = 'https://buyselladda.com';
   static const double defaultPadding = 16.0;
   static const Duration animationDuration = Duration(milliseconds: 300);
   
