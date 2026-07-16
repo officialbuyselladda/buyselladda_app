@@ -1216,7 +1216,7 @@ class _MapAddressRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: _T.bg,
         borderRadius: _T.r12,
-        border: Border.all(color: _T.line),
+        border: Border.all(color: _T.border),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
@@ -1317,7 +1317,7 @@ class _MapFallback extends StatelessWidget {
                 color: Colors.white.withOpacity(0.88),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white),
-                boxShadow: _T.shadowSoft,
+                boxShadow: _T.shadowSm,
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.search_rounded, size: 13, color: _T.blue),
