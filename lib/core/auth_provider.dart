@@ -159,7 +159,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);
-    if (token != null) {
+    if (token != null && token != 'undefined' && token != 'null' && token.trim().isNotEmpty) {
       final cachedUser = _readCachedUser(prefs);
       if (cachedUser != null) {
         state = AuthState(user: cachedUser, isAuthenticated: true, hasChecked: false, isLoading: true);
@@ -175,25 +175,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
           hasChecked: true,
         );
       } catch (e) {
-        if (cachedUser != null) {
-          state = AuthState(
-            user: cachedUser,
-            isAuthenticated: true,
-            hasChecked: true,
-            error: null,
-          );
-        } else {
-          state = const AuthState(hasChecked: true);
-        }
+        await prefs.remove(_tokenKey);
+        await prefs.remove(_userKey);
+        state = const AuthState(hasChecked: true);
       }
     } else {
+      await prefs.remove(_tokenKey);
       state = const AuthState(hasChecked: true);
     }
   }
 
   Future<void> _persistSession(dynamic token, dynamic userData) async {
+    final tokenText = token?.toString().trim() ?? '';
+    if (tokenText.isEmpty || tokenText == 'undefined' || tokenText == 'null') {
+      throw Exception('Auth token missing');
+    }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, '$token');
+    await prefs.setString(_tokenKey, tokenText);
     await _persistUser(userData);
   }
 

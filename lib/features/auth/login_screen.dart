@@ -27,6 +27,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final notice = args is Map ? args['notice']?.toString() : null;
     if (authState.isAuthenticated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
@@ -43,6 +45,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (notice != null && notice.isNotEmpty) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: Text(
+                  notice,
+                  style: const TextStyle(color: Color(0xFF065F46), fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
             TextFormField(
               controller: _emailController,
               decoration: const InputDecoration(

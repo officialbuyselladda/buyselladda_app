@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String _defaultBaseUrl = 'https://dealkro.in/api';
+  static const String _defaultBaseUrl = 'https://buyselladda.com/api';
   static Dio? _dio;
 
   static String get baseUrl {
@@ -39,7 +39,7 @@ class ApiService {
       onRequest: (options, handler) async {
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('token');
-        if (token != null) {
+        if (token != null && token != 'undefined' && token != 'null' && token.trim().isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         }
         options.headers.remove('If-None-Match');

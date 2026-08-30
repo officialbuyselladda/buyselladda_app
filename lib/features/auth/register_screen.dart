@@ -144,8 +144,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             userType: _userType,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-      Navigator.pushReplacementNamed(context, '/login');
+      Navigator.pushReplacementNamed(context, '/login', arguments: {
+        'notice': message.isEmpty ? 'Please check your email and verify your account before login.' : message,
+      });
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

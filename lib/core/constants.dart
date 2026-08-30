@@ -10,7 +10,7 @@ class AppConstants {
   static const Duration animationDuration = Duration(milliseconds: 300);
   
   // API paths
-  static const String baseUrl = 'https://dealkro.in/api/'; // ApiService normalizes and uses .env when present.
+  static const String baseUrl = 'https://buyselladda.com/api/'; // ApiService normalizes and uses .env when present.
   static const String authPath = '/auth';
   static const String productPath = '/products';
   static const String userPath = '/users';
@@ -21,16 +21,18 @@ class AppConstants {
   // Website-aligned category fallback. Backend categories still load dynamically
   // where available, so admin-created categories appear without app updates.
   static const List<String> categories = [
-    'Stationary',
+    'Mobiles',
     'Electronics',
+    'Computers & Laptops',
+    'Vehicles',
+    'Property',
+    'Furniture',
+    'Fashion',
     'Jobs',
-    'Clothes',
-    'Room',
-    'Flat,Building',
-    'Cars',
-    'Motorcycle',
-    'For Sale: Houses & Apartments',
-    'For Rent: Houses & Apartments',
+    'Services',
+    'Books',
+    'Sports & Fitness',
+    'Others',
   ];
   
   // Brand colors aligned with the home screen design system.
