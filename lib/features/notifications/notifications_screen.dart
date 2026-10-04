@@ -205,16 +205,16 @@ class _NotificationSummary extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppConstants.borderColor),
-        boxShadow: const [BoxShadow(color: Color(0x081E293B), blurRadius: 16, offset: Offset(0, 8))],
+        boxShadow: const [BoxShadow(color: Color(0x0D0B63E5), blurRadius: 16, offset: Offset(0, 6))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(color: AppConstants.primaryLightColor, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: AppConstants.primaryLightColor, borderRadius: BorderRadius.circular(8)),
             child: const Icon(Icons.notifications_active_outlined, color: AppConstants.primaryDarkColor),
           ),
           const SizedBox(width: 12),
@@ -281,15 +281,15 @@ class _NotificationTile extends StatelessWidget {
     final product = _asMap(notification['relatedProduct']);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(8),
       onTap: onTap,
       child: Ink(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: unread ? AppConstants.primaryLightColor : AppConstants.surfaceColor,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: unread ? AppConstants.primaryBorderColor : AppConstants.borderColor),
-          boxShadow: const [BoxShadow(color: Color(0x081E293B), blurRadius: 14, offset: Offset(0, 6))],
+          boxShadow: const [BoxShadow(color: Color(0x0D0B63E5), blurRadius: 14, offset: Offset(0, 6))],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +299,7 @@ class _NotificationTile extends StatelessWidget {
               height: 42,
               decoration: BoxDecoration(
                 color: unread ? AppConstants.primaryColor : AppConstants.secondaryLightColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(_iconFor(type), color: unread ? Colors.white : AppConstants.secondaryColor, size: 21),
             ),
@@ -347,7 +347,7 @@ class _NotificationTile extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(unread ? 0.74 : 1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppConstants.borderColor),
                       ),
                       child: Row(children: [

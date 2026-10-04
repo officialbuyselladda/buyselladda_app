@@ -220,7 +220,7 @@ class _ChatHeader extends StatelessWidget {
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(999)),
+              decoration: BoxDecoration(color: const Color(0xFFFFF3E4), borderRadius: BorderRadius.circular(999)),
               child: Text('$unread unread', style: const TextStyle(color: AppConstants.primaryDarkColor, fontWeight: FontWeight.w900, fontSize: 12)),
             ),
           ],
@@ -253,15 +253,15 @@ class _ChatTile extends StatelessWidget {
     final lastSeen = DateTime.tryParse('${presence[userId]?['lastSeen'] ?? otherUser?['lastSeen'] ?? ''}');
 
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       onTap: onTap,
       child: Ink(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: unread > 0 ? AppConstants.primaryLightColor : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: unread > 0 ? AppConstants.primaryBorderColor : AppConstants.borderColor),
-          boxShadow: const [BoxShadow(color: Color(0x08111827), blurRadius: 16, offset: Offset(0, 8))],
+          boxShadow: const [BoxShadow(color: Color(0x0D0B63E5), blurRadius: 16, offset: Offset(0, 6))],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,7 +271,7 @@ class _ChatTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 27,
-                  backgroundColor: unread > 0 ? AppConstants.primaryColor : const Color(0xFF64748B),
+                  backgroundColor: unread > 0 ? AppConstants.primaryColor : AppConstants.textSecondaryColor,
                   backgroundImage: avatarUrl == null ? null : CachedNetworkImageProvider(avatarUrl),
                   child: avatarUrl == null ? Text(title.substring(0, 1).toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)) : null,
                 ),
@@ -329,7 +329,7 @@ class _ChatTile extends StatelessWidget {
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
                         color: AppConstants.backgroundColor,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: AppConstants.borderColor),
                       ),
                       child: Row(

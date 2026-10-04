@@ -5,6 +5,7 @@ import 'constants.dart';
 
 ThemeData appTheme() {
   final baseText = GoogleFonts.poppinsTextTheme();
+  const sellAccent = AppConstants.warningColor;
 
   return ThemeData(
     useMaterial3: true,
@@ -12,6 +13,7 @@ ThemeData appTheme() {
       seedColor: AppConstants.primaryColor,
       primary: AppConstants.primaryColor,
       secondary: AppConstants.secondaryColor,
+      tertiary: sellAccent,
       surface: AppConstants.surfaceColor,
       surfaceContainerHighest: AppConstants.backgroundColor,
       error: AppConstants.errorColor,
@@ -22,7 +24,7 @@ ThemeData appTheme() {
       displayColor: AppConstants.textPrimaryColor,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: AppConstants.backgroundColor,
+      backgroundColor: AppConstants.surfaceColor,
       foregroundColor: AppConstants.textPrimaryColor,
       elevation: 0,
       centerTitle: true,
@@ -65,6 +67,8 @@ ThemeData appTheme() {
       fillColor: AppConstants.surfaceColor,
       hintStyle: const TextStyle(color: AppConstants.textSubtleColor),
       labelStyle: const TextStyle(color: AppConstants.textSecondaryColor),
+      prefixIconColor: AppConstants.textSecondaryColor,
+      suffixIconColor: AppConstants.textSecondaryColor,
     ),
     cardTheme: CardThemeData(
       elevation: 0,
@@ -93,9 +97,55 @@ ThemeData appTheme() {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: AppConstants.primaryDarkColor,
+        foregroundColor: AppConstants.primaryColor,
         textStyle: baseText.labelLarge?.copyWith(fontWeight: FontWeight.w800),
       ),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: sellAccent,
+      foregroundColor: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: AppConstants.surfaceColor,
+      selectedColor: AppConstants.primaryLightColor,
+      disabledColor: AppConstants.backgroundColor,
+      side: const BorderSide(color: AppConstants.borderColor),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      labelStyle: baseText.labelMedium?.copyWith(
+        color: AppConstants.textPrimaryColor,
+        fontWeight: FontWeight.w800,
+      ),
+      secondaryLabelStyle: baseText.labelMedium?.copyWith(
+        color: AppConstants.primaryColor,
+        fontWeight: FontWeight.w900,
+      ),
+    ),
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: AppConstants.surfaceColor,
+      selectedItemColor: AppConstants.primaryColor,
+      unselectedItemColor: AppConstants.textSubtleColor,
+      selectedLabelStyle: baseText.labelSmall?.copyWith(fontWeight: FontWeight.w900),
+      unselectedLabelStyle: baseText.labelSmall?.copyWith(fontWeight: FontWeight.w700),
+      type: BottomNavigationBarType.fixed,
+      elevation: 0,
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: AppConstants.surfaceColor,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: AppConstants.primaryLightColor,
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return baseText.labelSmall?.copyWith(
+          color: selected ? AppConstants.primaryColor : AppConstants.textSubtleColor,
+          fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+        );
+      }),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return IconThemeData(color: selected ? AppConstants.primaryColor : AppConstants.textSubtleColor);
+      }),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,

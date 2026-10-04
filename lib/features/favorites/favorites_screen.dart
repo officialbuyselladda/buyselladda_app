@@ -185,16 +185,17 @@ class _FavoriteRow extends StatelessWidget {
     final formatter = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs ', decimalDigits: 0);
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         onTap: () => Navigator.pushNamed(context, ProductDetailScreen.routeName, arguments: product.id),
         child: Ink(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            color: AppConstants.surfaceColor,
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppConstants.borderColor),
-            boxShadow: const [BoxShadow(color: Color(0x0A1E293B), blurRadius: 18, offset: Offset(0, 8))],
+            boxShadow: const [BoxShadow(color: Color(0x0D0B63E5), blurRadius: 16, offset: Offset(0, 6))],
           ),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _FavoriteImage(url: product.images.isNotEmpty ? product.images.first : null),
@@ -261,7 +262,7 @@ class _FavoriteImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(8),
       child: SizedBox(
         width: 104,
         height: 118,

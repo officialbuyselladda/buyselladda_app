@@ -35,20 +35,20 @@ class AppConstants {
     'Others',
   ];
   
-  // Brand colors aligned with the home screen design system.
-  static const Color primaryColor = Color(0xFFF97316);
-  static const Color primaryDarkColor = Color(0xFFEA6A05);
-  static const Color primaryLightColor = Color(0xFFFFF7ED);
-  static const Color primaryBorderColor = Color(0xFFFED7AA);
-  static const Color secondaryColor = Color(0xFF2563EB);
-  static const Color secondaryLightColor = Color(0xFFEFF6FF);
+  // Logo-led marketplace palette with OLX-style classifieds UX.
+  static const Color primaryColor = Color(0xFF0B63E5);
+  static const Color primaryDarkColor = Color(0xFF0647B5);
+  static const Color primaryLightColor = Color(0xFFEAF2FF);
+  static const Color primaryBorderColor = Color(0xFFBFD7FF);
+  static const Color secondaryColor = Color(0xFF12A642);
+  static const Color secondaryLightColor = Color(0xFFEAF8EF);
   static const Color errorColor = Color(0xFFEF4444);
-  static const Color successColor = Color(0xFF10B981);
-  static const Color warningColor = Color(0xFFF59E0B);
-  static const Color backgroundColor = Color(0xFFF8FAFF);
+  static const Color successColor = Color(0xFF12A642);
+  static const Color warningColor = Color(0xFFFF8200);
+  static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color surfaceColor = Color(0xFFFFFFFF);
-  static const Color borderColor = Color(0xFFE2E8F0);
-  static const Color textPrimaryColor = Color(0xFF1E293B);
-  static const Color textSecondaryColor = Color(0xFF64748B);
-  static const Color textSubtleColor = Color(0xFF94A3B8);
+  static const Color borderColor = Color(0xFFDDE5F0);
+  static const Color textPrimaryColor = Color(0xFF17233C);
+  static const Color textSecondaryColor = Color(0xFF5D6B82);
+  static const Color textSubtleColor = Color(0xFF95A1B2);
 }

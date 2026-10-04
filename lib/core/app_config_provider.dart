@@ -59,7 +59,7 @@ class DealAppConfig {
         appIconUrl: '',
         primaryColor: AppConstants.primaryColor,
         secondaryColor: AppConstants.secondaryColor,
-        accentColor: Color(0xFFF97316),
+        accentColor: Color(0xFFFF8200),
         splashTitle: AppConstants.appName,
         splashSubtitle: AppConstants.tagline,
         splashLoadingText: 'Loading fresh deals near you',

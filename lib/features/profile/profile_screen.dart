@@ -209,9 +209,9 @@ class _ProfileHero extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppConstants.borderColor),
-        boxShadow: const [BoxShadow(color: Color(0x0A1E293B), blurRadius: 20, offset: Offset(0, 10))],
+        boxShadow: const [BoxShadow(color: Color(0x0D0B63E5), blurRadius: 16, offset: Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +274,7 @@ class _ProfileHero extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppConstants.backgroundColor,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppConstants.borderColor),
             ),
             child: Row(children: [
@@ -376,7 +376,7 @@ class _ProfileStatsGrid extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppConstants.borderColor),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

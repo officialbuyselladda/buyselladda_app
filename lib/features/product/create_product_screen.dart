@@ -394,9 +394,9 @@ class _CreateProductScreenState extends ConsumerState<CreateProductScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppConstants.borderColor),
-                  boxShadow: const [BoxShadow(color: Color(0x12000000), blurRadius: 18, offset: Offset(0, -6))],
+                  boxShadow: const [BoxShadow(color: Color(0x120B63E5), blurRadius: 18, offset: Offset(0, -6))],
                 ),
                 child: SizedBox(
                   width: double.infinity,
@@ -570,7 +570,7 @@ class _PostingStatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppConstants.secondaryLightColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: AppConstants.primaryBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -602,7 +602,7 @@ class _HeaderCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFFED7AA))),
+      decoration: BoxDecoration(color: const Color(0xFFFFF3E4), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFFFCC99))),
       child: Row(
         children: [
           const Icon(Icons.campaign_outlined, color: AppConstants.primaryDarkColor),
@@ -610,7 +610,7 @@ class _HeaderCard extends StatelessWidget {
           Expanded(
             child: Text(
               editing ? 'Update your ad details. Major edits go back to review.' : 'Create a clean listing with photos, price, description and exact location.',
-              style: const TextStyle(color: Color(0xFF9A3412), fontWeight: FontWeight.w700),
+              style: const TextStyle(color: AppConstants.textSecondaryColor, fontWeight: FontWeight.w700),
             ),
           ),
         ],

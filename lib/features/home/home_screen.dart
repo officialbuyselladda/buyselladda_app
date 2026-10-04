@@ -22,29 +22,29 @@ import '../shared/product_card.dart';
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 class _T {
-  static const orange      = Color(0xFFF97316);
-  static const orangeDark  = Color(0xFFEA6A05);
-  static const orangeLight = Color(0xFFFFF7ED);
-  static const orangeMid   = Color(0xFFFED7AA);
-  static const blue        = Color(0xFF2563EB);
-  static const blueLight   = Color(0xFFEFF6FF);
-  static const bg          = Color(0xFFF8FAFF);
+  static const orange      = Color(0xFFFF8200);
+  static const orangeDark  = Color(0xFFE86F00);
+  static const orangeLight = Color(0xFFFFF3E4);
+  static const orangeMid   = Color(0xFFFFCC99);
+  static const blue        = Color(0xFF0B63E5);
+  static const blueLight   = Color(0xFFEAF2FF);
+  static const bg          = Color(0xFFF5F7FA);
   static const surface     = Color(0xFFFFFFFF);
-  static const border      = Color(0xFFE2E8F0);
-  static const text        = Color(0xFF1E293B);
-  static const textMuted   = Color(0xFF64748B);
-  static const textSubtle  = Color(0xFF94A3B8);
-  static const green       = Color(0xFF10B981);
-  static const greenLight  = Color(0xFFECFDF5);
-  static const amber       = Color(0xFFF59E0B);
-  static const amberLight  = Color(0xFFFEF3C7);
+  static const border      = Color(0xFFDDE5F0);
+  static const text        = Color(0xFF17233C);
+  static const textMuted   = Color(0xFF5D6B82);
+  static const textSubtle  = Color(0xFF95A1B2);
+  static const green       = Color(0xFF12A642);
+  static const greenLight  = Color(0xFFEAF8EF);
+  static const amber       = Color(0xFFFF8200);
+  static const amberLight  = Color(0xFFFFF3E4);
   static const red         = Color(0xFFEF4444);
   static const redLight    = Color(0xFFFEF2F2);
 
   static const shadowSm  = [BoxShadow(color: Color(0x0A000000), blurRadius: 4,  offset: Offset(0, 1))];
   static const shadowMd  = [BoxShadow(color: Color(0x0F000000), blurRadius: 12, offset: Offset(0, 4))];
   static const shadowLg  = [BoxShadow(color: Color(0x14000000), blurRadius: 24, offset: Offset(0, 8))];
-  static const shadowOr  = [BoxShadow(color: Color(0x28F97316), blurRadius: 16, offset: Offset(0, 4))];
+  static const shadowOr  = [BoxShadow(color: Color(0x22FF8200), blurRadius: 16, offset: Offset(0, 4))];
 
   static final r8  = BorderRadius.circular(8);
   static final r10 = BorderRadius.circular(10);
@@ -55,7 +55,7 @@ class _T {
   static final r99 = BorderRadius.circular(99);
 
   static TextStyle display(double sz, {Color c = text, FontWeight w = FontWeight.w700}) =>
-      TextStyle(fontSize: sz, fontWeight: w, color: c, letterSpacing: -0.3, height: 1.2);
+      TextStyle(fontSize: sz, fontWeight: w, color: c, letterSpacing: 0, height: 1.2);
 
   static TextStyle body(double sz, {Color c = text, FontWeight w = FontWeight.w400, double h = 1.4}) =>
       TextStyle(fontSize: sz, fontWeight: w, color: c, height: h);
@@ -85,17 +85,19 @@ class _HomeSlide {
 }
 
 const _staticCats = [
-  _CatItem('All',       '',           Icons.apps_rounded),
-  _CatItem('Stationary', 'Stationary', Icons.menu_book_outlined),
+  _CatItem('All', '', Icons.apps_rounded),
+  _CatItem('Mobiles', 'Mobiles', Icons.phone_android_rounded),
   _CatItem('Electronics', 'Electronics', Icons.devices_rounded),
+  _CatItem('Computers', 'Computers & Laptops', Icons.laptop_mac_rounded),
+  _CatItem('Vehicles', 'Vehicles', Icons.directions_car_rounded),
+  _CatItem('Property', 'Property', Icons.apartment_rounded),
+  _CatItem('Furniture', 'Furniture', Icons.chair_alt_rounded),
+  _CatItem('Fashion', 'Fashion', Icons.checkroom_outlined),
   _CatItem('Jobs', 'Jobs', Icons.work_outline_rounded),
-  _CatItem('Clothes', 'Clothes', Icons.checkroom_outlined),
-  _CatItem('Room', 'Room', Icons.meeting_room_outlined),
-  _CatItem('Flat,Building', 'Flat,Building', Icons.apartment_rounded),
-  _CatItem('Cars', 'Cars', Icons.directions_car_rounded),
-  _CatItem('Motorcycle', 'Motorcycle', Icons.two_wheeler_rounded),
-  _CatItem('For Sale: Houses & Apartments', 'For Sale: Houses & Apartments', Icons.home_work_outlined),
-  _CatItem('For Rent: Houses & Apartments', 'For Rent: Houses & Apartments', Icons.key_rounded),
+  _CatItem('Services', 'Services', Icons.handyman_outlined),
+  _CatItem('Books', 'Books', Icons.menu_book_outlined),
+  _CatItem('Sports', 'Sports & Fitness', Icons.sports_cricket_rounded),
+  _CatItem('Others', 'Others', Icons.more_horiz_rounded),
 ];
 
 class _NavItem {
@@ -1793,7 +1795,7 @@ class _SellFabState extends State<_SellFab> {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(colors: [_T.orange, _T.orangeDark],
                       begin: Alignment.topLeft, end: Alignment.bottomRight),
-                  boxShadow: [BoxShadow(color: Color(0x40F97316), blurRadius: 18, offset: Offset(0, 8))],
+                  boxShadow: [BoxShadow(color: Color(0x33FF8200), blurRadius: 18, offset: Offset(0, 8))],
                 ),
                 child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
               ),

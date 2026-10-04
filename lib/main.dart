@@ -161,7 +161,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   right: -46,
                   child: _SplashAccentCircle(
                     size: compact ? 154 : 188,
-                    color: const Color(0x1400A49F),
+                    color: const Color(0x140B63E5),
                   ),
                 ),
                 Positioned(
@@ -169,7 +169,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   bottom: 78,
                   child: _SplashAccentCircle(
                     size: compact ? 124 : 158,
-                    color: const Color(0x14F97316),
+                    color: const Color(0x140B63E5),
                   ),
                 ),
                 Padding(
@@ -313,7 +313,7 @@ class _SplashBrandMark extends StatelessWidget {
           config.splashTitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: const Color(0xFF002F34),
+                color: const Color(0xFF17233C),
                 fontSize: compact ? 28 : 32,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
@@ -443,7 +443,7 @@ class _SplashCategoryPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppConstants.borderColor),
         boxShadow: const [
-          BoxShadow(color: Color(0x0A002F34), blurRadius: 18, offset: Offset(0, 10)),
+          BoxShadow(color: Color(0x0A0B63E5), blurRadius: 18, offset: Offset(0, 10)),
         ],
       ),
       child: Row(
@@ -474,7 +474,7 @@ class _SplashMiniCategory extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFD8F1EF)),
       ),
-      child: Icon(icon, size: 20, color: const Color(0xFF002F34)),
+      child: Icon(icon, size: 20, color: const Color(0xFF0B63E5)),
     );
   }
 }
@@ -503,7 +503,7 @@ class _SplashChip extends StatelessWidget {
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF002F34),
+              color: Color(0xFF17233C),
             ),
           ),
         ],

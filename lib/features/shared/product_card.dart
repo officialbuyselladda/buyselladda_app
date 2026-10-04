@@ -31,9 +31,9 @@ class ProductCard extends StatelessWidget {
           border: Border.all(color: AppConstants.borderColor),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0F1E293B),
-              blurRadius: 20,
-              offset: Offset(0, 10),
+              color: Color(0x0D0B63E5),
+              blurRadius: 16,
+              offset: Offset(0, 6),
             ),
           ],
         ),
@@ -56,8 +56,9 @@ class ProductCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.95),
                           shape: BoxShape.circle,
+                          border: Border.all(color: AppConstants.borderColor),
                         ),
-                        child: const Icon(Icons.favorite_border_rounded, size: 18, color: Color(0xFF111827)),
+                        child: const Icon(Icons.favorite_border_rounded, size: 18, color: AppConstants.primaryColor),
                       ),
                     ),
                     Positioned(
@@ -74,7 +75,7 @@ class ProductCard extends StatelessWidget {
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -85,14 +86,14 @@ class ProductCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
+                          color: AppConstants.warningColor,
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: AppConstants.primaryBorderColor),
+                          border: Border.all(color: Color(0xFFE86F00)),
                         ),
                         child: Text(
                           product.category.isEmpty ? 'Ad' : product.category,
                           style: const TextStyle(
-                            color: AppConstants.primaryDarkColor,
+                            color: AppConstants.primaryColor,
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                           ),
@@ -123,14 +124,14 @@ class ProductCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF374151),
+                          color: AppConstants.textPrimaryColor,
                           fontWeight: FontWeight.w800,
                         ),
                   ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.place_outlined, size: 14, color: Color(0xFF9CA3AF)),
+                      const Icon(Icons.place_outlined, size: 14, color: AppConstants.textSubtleColor),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -147,7 +148,7 @@ class ProductCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.visibility_outlined, size: 13, color: Color(0xFF9CA3AF)),
+                      const Icon(Icons.visibility_outlined, size: 13, color: AppConstants.textSubtleColor),
                       const SizedBox(width: 4),
                       Text(
                         '${product.views} views',
@@ -180,7 +181,7 @@ class _ProductImage extends StatelessWidget {
     if (url == null || url!.isEmpty) {
       return Container(
         color: AppConstants.backgroundColor,
-        child: const Icon(Icons.image_not_supported_outlined, color: AppConstants.textSubtleColor),
+        child: const Icon(Icons.image_not_supported_outlined, color: AppConstants.primaryBorderColor),
       );
     }
 
@@ -190,7 +191,7 @@ class _ProductImage extends StatelessWidget {
       placeholder: (context, _) => Container(color: AppConstants.backgroundColor),
       errorWidget: (context, _, __) => Container(
         color: AppConstants.backgroundColor,
-        child: const Icon(Icons.image_not_supported_outlined, color: AppConstants.textSubtleColor),
+        child: const Icon(Icons.image_not_supported_outlined, color: AppConstants.primaryBorderColor),
       ),
     );
   }

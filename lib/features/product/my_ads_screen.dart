@@ -266,16 +266,17 @@ class _MyAdRow extends StatelessWidget {
     final isSold = product.status == 'sold';
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         onTap: onView,
         child: Ink(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            color: AppConstants.surfaceColor,
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: AppConstants.borderColor),
-            boxShadow: const [BoxShadow(color: Color(0x0A1E293B), blurRadius: 18, offset: Offset(0, 8))],
+            boxShadow: const [BoxShadow(color: Color(0x0D0B63E5), blurRadius: 16, offset: Offset(0, 6))],
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -389,7 +390,7 @@ class _AdImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(8),
       child: SizedBox(
         width: 96,
         height: 108,

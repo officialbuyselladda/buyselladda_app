@@ -38,10 +38,10 @@ class AuthShell extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppConstants.borderColor),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x12002F34), blurRadius: 32, offset: Offset(0, 16)),
+                    BoxShadow(color: Color(0x120B63E5), blurRadius: 32, offset: Offset(0, 16)),
                   ],
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -77,7 +77,7 @@ class _BrandPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFE8FFFC), Color(0xFFFFFFFF), Color(0xFFFFF7ED)],
+          colors: [Color(0xFFEAF2FF), Color(0xFFFFFFFF), Color(0xFFFFF3E4)],
         ),
       ),
       child: Column(
@@ -89,7 +89,7 @@ class _BrandPanel extends StatelessWidget {
             children: [
               Image.asset('assets/images/logo.png', width: 178, fit: BoxFit.contain),
               const SizedBox(height: 10),
-              const Text(AppConstants.appName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF002F34))),
+              const Text(AppConstants.appName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF17233C))),
               const SizedBox(height: 3),
               const Text(AppConstants.tagline, style: TextStyle(color: AppConstants.textSecondaryColor, fontWeight: FontWeight.w800)),
             ],
@@ -117,7 +117,7 @@ class _BrandPanel extends StatelessWidget {
               Text(
                 'Manage ads, chats, favorites, and support from one secure marketplace account.',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: const Color(0xFF002F34),
+                      color: const Color(0xFF17233C),
                       fontWeight: FontWeight.w900,
                       height: 1.18,
                     ),
@@ -171,7 +171,7 @@ class _FormPanel extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: const Color(0xFF002F34),
+                  color: const Color(0xFF17233C),
                   fontWeight: FontWeight.w900,
                 ),
           ),
@@ -196,7 +196,7 @@ class _TrustChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),

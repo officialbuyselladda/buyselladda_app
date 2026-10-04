@@ -17,26 +17,26 @@ import '../shared/product_card.dart';
 // ─── Theme tokens ────────────────────────────────────────────────────────────
 class _T {
   // Brand
-  static const orange     = Color(0xFFF97316);
-  static const orangeDark = Color(0xFFEA6A05);
-  static const orangeLight= Color(0xFFFFF7ED);
-  static const orangeMid  = Color(0xFFFED7AA);
+  static const orange     = Color(0xFFFF8200);
+  static const orangeDark = Color(0xFFE86F00);
+  static const orangeLight= Color(0xFFFFF3E4);
+  static const orangeMid  = Color(0xFFFFCC99);
 
   // Blues (accent)
-  static const blue       = Color(0xFF2563EB);
-  static const blueLight  = Color(0xFFEFF6FF);
+  static const blue       = Color(0xFF0B63E5);
+  static const blueLight  = Color(0xFFEAF2FF);
 
   // Neutrals
-  static const bg         = Color(0xFFF8FAFF);
+  static const bg         = Color(0xFFF5F7FA);
   static const surface    = Color(0xFFFFFFFF);
-  static const border     = Color(0xFFE2E8F0);
-  static const text       = Color(0xFF1E293B);
-  static const textMuted  = Color(0xFF64748B);
-  static const textSubtle = Color(0xFF94A3B8);
+  static const border     = Color(0xFFDDE5F0);
+  static const text       = Color(0xFF17233C);
+  static const textMuted  = Color(0xFF5D6B82);
+  static const textSubtle = Color(0xFF95A1B2);
 
   // Status
-  static const green      = Color(0xFF10B981);
-  static const greenLight = Color(0xFFECFDF5);
+  static const green      = Color(0xFF12A642);
+  static const greenLight = Color(0xFFEAF8EF);
   static const red        = Color(0xFFEF4444);
   static const redLight   = Color(0xFFFEF2F2);
 
@@ -44,7 +44,7 @@ class _T {
   static const shadowSm = [BoxShadow(color: Color(0x0A000000), blurRadius: 4,  offset: Offset(0, 1))];
   static const shadowMd = [BoxShadow(color: Color(0x12000000), blurRadius: 12, offset: Offset(0, 4))];
   static const shadowLg = [BoxShadow(color: Color(0x18000000), blurRadius: 28, offset: Offset(0, 8))];
-  static const shadowOrange = [BoxShadow(color: Color(0x30F97316), blurRadius: 20, offset: Offset(0, 6))];
+  static const shadowOrange = [BoxShadow(color: Color(0x22FF8200), blurRadius: 20, offset: Offset(0, 6))];
 
   // Radius
   static final r8  = BorderRadius.circular(8);
@@ -58,7 +58,7 @@ class _T {
   static const fontBody    = 'Figtree';
 
   static TextStyle display(double size, {Color color = text, FontWeight weight = FontWeight.w700}) =>
-      TextStyle(fontFamily: fontDisplay, fontSize: size, fontWeight: weight, color: color, letterSpacing: -0.5);
+      TextStyle(fontFamily: fontDisplay, fontSize: size, fontWeight: weight, color: color, letterSpacing: 0);
 
   static TextStyle body(double size, {Color color = text, FontWeight weight = FontWeight.w400, double height = 1.0}) =>
       TextStyle(fontFamily: fontBody, fontSize: size, fontWeight: weight, color: color, height: height);
@@ -1111,7 +1111,7 @@ class _MapCard extends StatelessWidget {
             Container(width: 4, height: 18,
               decoration: BoxDecoration(color: _T.orange, borderRadius: BorderRadius.circular(2))),
             const SizedBox(width: 8),
-            const Expanded(child: Text('Location & map', style: TextStyle(fontFamily: _T.fontDisplay, fontSize: 14, fontWeight: FontWeight.w700, color: _T.text, letterSpacing: -0.5))),
+            const Expanded(child: Text('Location & map', style: TextStyle(fontFamily: _T.fontDisplay, fontSize: 14, fontWeight: FontWeight.w700, color: _T.text, letterSpacing: 0))),
             GestureDetector(
               onTap: _openDirections,
               child: Container(
@@ -1262,7 +1262,7 @@ class _MapFallback extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFEFF6FF), Color(0xFFFFF7ED)],
+          colors: [Color(0xFFEAF2FF), Color(0xFFFFF3E4)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1418,7 +1418,7 @@ class _SafetyCard extends StatelessWidget {
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
       gradient: const LinearGradient(
-        colors: [Color(0xFFFFF7ED), Color(0xFFFEF3C7)],
+        colors: [Color(0xFFEAF2FF), Color(0xFFFFF3E4)],
         begin: Alignment.topLeft, end: Alignment.bottomRight,
       ),
       borderRadius: _T.r12,
@@ -1582,9 +1582,9 @@ class _ContactBar extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
         decoration: BoxDecoration(
           color: _T.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: _T.border),
-          boxShadow: const [BoxShadow(color: Color(0x16000000), blurRadius: 24, offset: Offset(0, -8))],
+          boxShadow: const [BoxShadow(color: Color(0x160B63E5), blurRadius: 24, offset: Offset(0, -8))],
         ),
         child: Row(children: [
           // Price info
@@ -1609,7 +1609,7 @@ class _ContactBar extends StatelessWidget {
               width: 50, height: 50,
               decoration: BoxDecoration(
                 color: isFavorited ? const Color(0xFFFFF0F3) : _T.bg,
-                borderRadius: _T.r12,
+                borderRadius: _T.r8,
                 border: Border.all(color: isFavorited ? const Color(0xFFFF4D6D) : _T.border),
               ),
               child: Icon(
